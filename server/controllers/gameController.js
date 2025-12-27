@@ -2,7 +2,7 @@ const User = require('../models/User');
 
 // @desc    Get all users (to find friends)
 // @route   GET /api/games/users
-exports.getUsers = async (req, res) => {
+const getUsers = async (req, res) => {
     try {
         const users = await User.find({ _id: { $ne: req.user._id } }).select('name email');
         res.json(users);
@@ -13,7 +13,7 @@ exports.getUsers = async (req, res) => {
 
 // @desc    Send Friend Request (Simplified: Instant Add for prototype)
 // @route   POST /api/games/add-friend
-exports.addFriend = async (req, res) => {
+const addFriend = async (req, res) => {
     const { friendId } = req.body;
     try {
         // Add to my list
@@ -25,4 +25,9 @@ exports.addFriend = async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
+};
+
+module.exports = {
+    getUsers,
+    addFriend
 };

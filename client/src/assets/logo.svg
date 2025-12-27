@@ -1,0 +1,20 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="myHostel logo">
+  <defs>
+    <linearGradient id="mh_grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="60%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <rect x="10" y="10" width="108" height="108" rx="24" fill="url(#mh_grad)"/>
+  <!-- Minimal house + monogram 'm' -->
+  <g fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Roof -->
+    <path d="M32 60 L64 36 L96 60"/>
+    <!-- Left wall + door/M shape -->
+    <path d="M36 58 V92"/>
+    <path d="M44 92 V70 C44 64 52 64 56 70 L64 82 L72 70 C76 64 84 64 84 70 V92"/>
+    <!-- Right wall -->
+    <path d="M92 58 V92"/>
+  </g>
+</svg>

@@ -1,3 +1,29 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer utilities {
+  .animate-slide-up {
+    animation: slideUp 0.5s ease-out forwards;
+  }
+  /* Hide horizontal scrollbar while keeping scroll functionality */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Base fallback to ensure readable defaults in dark mode */
+.dark body {
+  background-color: #0b1220;
+  color: #e5e7eb;
+}

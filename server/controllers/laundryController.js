@@ -1,15 +1,21 @@
 const Laundry = require('../models/Laundry');
 
+// Cache initialization flag to avoid repeated checks
+let laundryInitialized = false;
+
 // @desc    Get status of all machines
 // @route   GET /api/laundry
-exports.getLaundryStatus = async (req, res) => {
+const getLaundryStatus = async (req, res) => {
     try {
-        // Initialize 3 machines if they don't exist (One-time setup)
-        const count = await Laundry.countDocuments();
-        if (count === 0) {
-            await Laundry.insertMany([
-                { machineNumber: 1 }, { machineNumber: 2 }, { machineNumber: 3 }
-            ]);
+        // Initialize 3 machines only once (not on every request)
+        if (!laundryInitialized) {
+            const count = await Laundry.countDocuments();
+            if (count === 0) {
+                await Laundry.insertMany([
+                    { machineNumber: 1 }, { machineNumber: 2 }, { machineNumber: 3 }
+                ]);
+            }
+            laundryInitialized = true;
         }
         const machines = await Laundry.find().sort({ machineNumber: 1 });
         res.json(machines);
@@ -20,7 +26,7 @@ exports.getLaundryStatus = async (req, res) => {
 
 // @desc    Book a machine (Toggle logic for now)
 // @route   POST /api/laundry/book
-exports.bookMachine = async (req, res) => {
+const bookMachine = async (req, res) => {
     const { machineId } = req.body;
     try {
         const machine = await Laundry.findById(machineId);
@@ -46,4 +52,9 @@ exports.bookMachine = async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
+};
+
+module.exports = {
+    getLaundryStatus,
+    bookMachine
 };

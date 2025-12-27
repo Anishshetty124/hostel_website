@@ -2,7 +2,7 @@ const Complaint = require('../models/Complaint');
 
 // @desc    Create a complaint
 // @route   POST /api/complaints
-exports.createComplaint = async (req, res) => {
+const createComplaint = async (req, res) => {
     const { title, description } = req.body;
     try {
         const complaint = await Complaint.create({
@@ -18,11 +18,16 @@ exports.createComplaint = async (req, res) => {
 
 // @desc    Get my complaints
 // @route   GET /api/complaints
-exports.getMyComplaints = async (req, res) => {
+const getMyComplaints = async (req, res) => {
     try {
         const complaints = await Complaint.find({ user: req.user._id }).sort({ createdAt: -1 });
         res.json(complaints);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
+};
+
+module.exports = {
+    createComplaint,
+    getMyComplaints
 };

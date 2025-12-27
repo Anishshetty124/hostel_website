@@ -5,7 +5,7 @@ import { AuthContext } from '../context/AuthContext';
 // 1. Basic Protection (Any logged in user)
 export const ProtectedRoute = () => {
     const { user, loading } = useContext(AuthContext);
-    if (loading) return <div>Loading...</div>; 
+    if (loading) return <div className="p-6 text-center text-gray-600 dark:text-gray-300">Loading...</div>; 
     return user ? <Outlet /> : <Navigate to="/login" />;
 };
 
@@ -13,7 +13,7 @@ export const ProtectedRoute = () => {
 // THE ERROR HAPPENED BECAUSE THIS PART WAS MISSING OR NOT EXPORTED
 export const AdminRoute = () => {
     const { user, loading } = useContext(AuthContext);
-    if (loading) return <div>Loading...</div>;
+    if (loading) return <div className="p-6 text-center text-gray-600 dark:text-gray-300">Loading...</div>;
     
     // Check if role is admin
     return user && user.role === 'admin' ? <Outlet /> : <Navigate to="/dashboard" />;

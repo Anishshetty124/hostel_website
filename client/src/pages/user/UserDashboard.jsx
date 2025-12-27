@@ -1,108 +1,118 @@
-import { Link } from 'react-router-dom';
-import { Utensils, AlertCircle, Home, Gamepad2, WashingMachine, Image as ImageIcon, ChevronRight, Bell } from 'lucide-react';
+import { Link, useOutletContext } from "react-router-dom";
+import { Utensils, Image as ImageIcon, WashingMachine, Home, Gamepad2, Megaphone } from "lucide-react";
 
 const UserDashboard = () => {
-    // Current Date Formatter
-    const date = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  const { user } = useOutletContext();
 
-    // Premium Card Component
-    const ServiceCard = ({ title, desc, icon: Icon, link, color, delay }) => (
-        <Link 
-            to={link} 
-            className="group relative overflow-hidden bg-white p-6 rounded-2xl border border-slate-200/60 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:-translate-y-1 transition-all duration-300 ease-out flex flex-col justify-between h-48"
-        >
-            {/* Soft Background Gradient Effect */}
-            <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${color} opacity-[0.08] rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-150 duration-500`} />
+  const modules = [
+    {
+      title: "Food Menu",
+      desc: "Check today's mess menu",
+      path: "/user/food",
+      accentGradient: "from-orange-400 to-amber-500",
+      badge: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-200",
+      iconText: "text-orange-500",
+      icon: Utensils,
+    },
+    {
+      title: "Gallery",
+      desc: "Hostel events & memories",
+      path: "/user/gallery",
+      accentGradient: "from-purple-400 to-pink-500",
+      badge: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-200",
+      iconText: "text-purple-500",
+      icon: ImageIcon,
+    },
+    {
+      title: "Laundry",
+      desc: "Book slots & check status",
+      path: "/user/laundry",
+      accentGradient: "from-blue-400 to-cyan-500",
+      badge: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200",
+      iconText: "text-blue-500",
+      icon: WashingMachine,
+    },
+    {
+      title: "My Room",
+      desc: "Room details & complaints",
+      path: "/user/rooms",
+      accentGradient: "from-emerald-400 to-green-500",
+      badge: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-200",
+      iconText: "text-green-500",
+      icon: Home,
+    },
+    {
+      title: "Games",
+      desc: "TT, Badminton & more",
+      path: "/user/games",
+      accentGradient: "from-pink-400 to-rose-500",
+      badge: "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-200",
+      iconText: "text-pink-500",
+      icon: Gamepad2,
+    },
+    {
+      title: "Complaints",
+      desc: "Raise issues",
+      path: "/user/complaints",
+      accentGradient: "from-red-400 to-orange-500",
+      badge: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200",
+      iconText: "text-red-500",
+      icon: Megaphone,
+    }
+  ];
 
-            {/* Header: Icon & Arrow */}
-            <div className="flex justify-between items-start z-10">
-                <div className={`p-3 rounded-2xl bg-gradient-to-br ${color} bg-opacity-10 text-slate-700 shadow-sm border border-slate-100 group-hover:scale-110 transition-transform duration-300`}>
-                    <Icon size={24} className="text-gray-800" strokeWidth={2} />
-                </div>
-                <div className="text-slate-300 group-hover:text-slate-600 transition-colors">
-                    <ChevronRight size={20} />
-                </div>
-            </div>
-
-            {/* Footer: Text */}
-            <div className="z-10 mt-auto">
-                <h3 className="text-lg font-bold text-slate-800 tracking-tight group-hover:text-blue-600 transition-colors mb-1">
-                    {title}
-                </h3>
-                <p className="text-sm text-slate-500 font-medium leading-relaxed">
-                    {desc}
-                </p>
-            </div>
-        </Link>
-    );
-
-    return (
-        <div className="max-w-6xl mx-auto space-y-10 pt-4 pb-12">
-            {/* HEADER SECTION */}
-            <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-6">
-                <div>
-                    <p className="text-slate-500 font-medium text-sm uppercase tracking-wider mb-1">{date}</p>
-                    <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
-                        Dashboard
-                    </h1>
-                </div>
-                <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-slate-600 bg-slate-100 px-4 py-2 rounded-full border border-slate-200">
-                        Room 302
-                    </span>
-                    <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all">
-                        <Bell size={24} />
-                    </button>
-                </div>
-            </header>
-
-            {/* BENTO GRID LAYOUT */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                <ServiceCard 
-                    title="My Room" 
-                    desc="Roommates, inventory & status." 
-                    icon={Home} 
-                    link="/dashboard/rooms" 
-                    color="from-blue-100 to-indigo-100" 
-                />
-                <ServiceCard 
-                    title="Mess Menu" 
-                    desc="Breakfast, Lunch & Dinner schedule." 
-                    icon={Utensils} 
-                    link="/dashboard/food" 
-                    color="from-orange-100 to-amber-100" 
-                />
-                <ServiceCard 
-                    title="Laundry" 
-                    desc="Check machines & book slots." 
-                    icon={WashingMachine} 
-                    link="/dashboard/laundry" 
-                    color="from-cyan-100 to-sky-100" 
-                />
-                <ServiceCard 
-                    title="Complaints" 
-                    desc="Raise issues directly to warden." 
-                    icon={AlertCircle} 
-                    link="/dashboard/complaints" 
-                    color="from-red-100 to-rose-100" 
-                />
-                <ServiceCard 
-                    title="Community Gallery" 
-                    desc="Photos from recent hostel events." 
-                    icon={ImageIcon} 
-                    link="/dashboard/gallery" 
-                    color="from-violet-100 to-purple-100" 
-                />
-                <ServiceCard 
-                    title="Game Zone" 
-                    desc="Find players for Chess & Ludo." 
-                    icon={Gamepad2} 
-                    link="/dashboard/games" 
-                    color="from-emerald-100 to-green-100" 
-                />
-            </div>
+  return (
+    <div className="space-y-6 animate-fade-in-up">
+      {/* Welcome Banner (only when logged in) */}
+      {user && (
+        <div className="relative overflow-hidden bg-white dark:bg-gray-800 rounded-2xl shadow-sm shadow-gray-200/70 dark:shadow-none border border-gray-200 dark:border-gray-700 p-6 transition-colors">
+          <div className="absolute -right-10 -top-10 h-36 w-36 bg-gradient-to-br from-blue-500/20 to-purple-500/20 dark:from-blue-600/20 dark:to-purple-600/20 rounded-full blur-3xl"></div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Hello, {user.firstName}! 👋
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">
+            Welcome to your hostel dashboard. What would you like to do today?
+          </p>
         </div>
-    );
+      )}
+
+      {/* Bento Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+        {modules.map((item, index) => (
+          <Link
+            key={index}
+            to={item.path}
+            className="group relative overflow-hidden bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-md shadow-slate-300/60 dark:shadow-none border border-slate-300 dark:border-gray-700 hover:shadow-lg transition-all duration-300 flex items-start gap-4"
+          >
+            <div className={`absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br ${item.accentGradient} opacity-10 group-hover:opacity-20 blur-2xl transition-opacity`}></div>
+
+            <div className="relative z-10">
+              <div className={`p-3 rounded-2xl bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 w-fit mb-3 text-lg ${item.iconText} group-hover:scale-110 transition-transform`}>
+                {(() => {
+                  const Icon = item.icon;
+                  return <Icon size={28} />;
+                })()}
+              </div>
+
+              <h3 className="font-semibold text-lg md:text-xl tracking-tight text-gray-900 dark:text-white">{item.title}</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{item.desc}</p>
+
+              <div className={`mt-4 inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold rounded-full border border-transparent ${item.badge}`}>
+                Quick access
+              </div>
+            </div>
+
+            {/* Arrow Icon */}
+            <div className="relative z-10 text-gray-300 dark:text-gray-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors ml-auto">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+              </svg>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
 };
 
 export default UserDashboard;

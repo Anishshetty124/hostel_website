@@ -2,7 +2,7 @@ const Gallery = require('../models/Gallery');
 
 // @desc    Get all images
 // @route   GET /api/gallery
-exports.getImages = async (req, res) => {
+const getImages = async (req, res) => {
     try {
         const images = await Gallery.find().sort({ createdAt: -1 });
         res.json(images);
@@ -13,7 +13,7 @@ exports.getImages = async (req, res) => {
 
 // @desc    Add image (URL)
 // @route   POST /api/gallery
-exports.addImage = async (req, res) => {
+const addImage = async (req, res) => {
     const { imageUrl, description } = req.body;
     try {
         const image = await Gallery.create({
@@ -25,4 +25,9 @@ exports.addImage = async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
+};
+
+module.exports = {
+    getImages,
+    addImage
 };

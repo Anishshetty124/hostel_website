@@ -1,27 +1,46 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
-    name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    role: { type: String, enum: ['user', 'admin'], default: 'user' },
-    roomNumber: { type: String, default: null },
-    floor: { type: Number, default: null },
-    isHostelMember: { type: Boolean, default: false },
-    friends: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
-}, { timestamps: true });
-
-// Hash password before saving
-userSchema.pre('save', async function(next) {
-    if (!this.isModified('password')) return next();
-    this.password = await bcrypt.hash(this.password, 10);
-    next();
+    firstName: {
+        type: String,
+        required: true,
+        trim: true
+    },
+    lastName: {
+        type: String,
+        trim: true
+    },
+    email: {
+        type: String,
+        required: true,
+        unique: true,
+        trim: true,
+        lowercase: true
+    },
+    password: {
+        type: String,
+        required: true
+    },
+    roomNumber: {
+        type: String,
+        default: "Not Assigned"
+    },
+    role: {
+        type: String,
+        enum: ['student', 'admin', 'warden'],
+        default: 'student'
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    }
 });
 
-// Compare password
-userSchema.methods.matchPassword = async function(enteredPassword) {
-    return await bcrypt.compare(enteredPassword, this.password);
-};
+// Add indexes for faster queries
+userSchema.index({ email: 1 }); // Email lookups (login)
+userSchema.index({ firstName: 1 }); // First name search (login)
+userSchema.index({ roomNumber: 1 }); // Room queries
 
+// --- THE CRITICAL FIX ---
+// Use module.exports directly. Do NOT use exports.User or { User }
 module.exports = mongoose.model('User', userSchema);
