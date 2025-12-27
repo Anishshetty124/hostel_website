@@ -1,5 +1,5 @@
 import { useState, useContext } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import Logo from "../assets/logo.svg";
 import { AuthContext } from "../context/AuthContext";
@@ -10,6 +10,7 @@ const Login = () => {
   const [status, setStatus] = useState({ loading: false, error: null });
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useContext(AuthContext);
 
   const handleChange = (e) => {
@@ -24,7 +25,9 @@ const Login = () => {
     try {
       const result = await login(formData.identifier, formData.password);
       if (result.success) {
-        navigate("/user/dashboard");
+        // Redirect to where user came from, or default to dashboard
+        const from = location.state?.from || "/user/dashboard";
+        navigate(from);
       } else {
         setStatus({ loading: false, error: result.message || "Login failed" });
       }
@@ -34,12 +37,15 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-slate-50 dark:bg-gray-900 px-4 py-10 transition-colors duration-300">
-      <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-0 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 shadow-lg">
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900 px-4 py-10 transition-colors duration-300">
+      <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-0 rounded-3xl overflow-hidden border border-gray-200 dark:border-gray-800/50 shadow-2xl">
         {/* Brand / Visual Panel */}
-        <div className="relative hidden md:flex bg-gradient-to-br from-indigo-600 via-indigo-500 to-purple-600 dark:from-indigo-700 dark:via-indigo-600 dark:to-purple-700 items-center justify-center p-10">
-          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_20%_20%,white_2px,transparent_2px)] bg-[size:24px_24px]"></div>
-          <div className="relative flex flex-col items-center text-white text-center gap-4">
+        <div className="relative hidden md:flex bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-700 dark:from-indigo-600 dark:via-indigo-700 dark:to-purple-900 items-center justify-center p-10 overflow-hidden">
+          {/* Animated background elements */}
+          <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_20%_20%,white_2px,transparent_2px)] bg-[size:24px_24px]"></div>
+          <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 w-72 h-72 bg-purple-300/20 rounded-full blur-3xl"></div>
+          <div className="relative flex flex-col items-center text-white text-center gap-4 z-10">
             <img src={Logo} alt="myHostel" className="h-16 w-16 drop-shadow-xl" />
             <h2 className="text-3xl font-semibold tracking-tight">Welcome to myHostel</h2>
             <p className="text-white/80 text-sm max-w-sm">Manage rooms, view menus, and stay on top of campus life.</p>
@@ -47,21 +53,21 @@ const Login = () => {
         </div>
 
         {/* Form Panel */}
-        <div className="bg-white dark:bg-gray-800 p-8 md:p-10">
-          <Link to="/" className="inline-flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 text-sm font-medium">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-white dark:bg-gray-800/80 backdrop-blur-sm p-8 md:p-12 flex flex-col justify-center">
+          <Link to="/" className="inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 text-sm font-medium transition-colors">
+            <svg className="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
             Back
           </Link>
 
           <div className="mt-6 mb-8">
-            <h1 className="text-2xl font-semibold text-gray-900 dark:text-white tracking-tight">Sign in to your account</h1>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent tracking-tight">Sign in to your account</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Use your email and password</p>
           </div>
 
           {status.error && (
-            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-600 dark:text-red-400 text-sm text-center font-medium flex items-center gap-2 justify-center">
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800/50 rounded-xl text-red-600 dark:text-red-400 text-sm text-center font-medium flex items-center gap-2 justify-center animate-pulse">
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
               </svg>
@@ -76,7 +82,7 @@ const Login = () => {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <svg className="w-5 h-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-indigo-500 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 </div>
@@ -88,7 +94,7 @@ const Login = () => {
                   value={formData.identifier}
                   onChange={handleChange}
                   placeholder="John or john@example.com"
-                  className="w-full bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-xl pl-12 pr-4 py-3.5 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/30 transition-all duration-200"
+                  className="w-full bg-indigo-50/30 dark:bg-indigo-950/20 border-2 border-indigo-200 dark:border-indigo-800/50 rounded-xl pl-12 pr-4 py-3.5 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-4 focus:ring-indigo-200 dark:focus:ring-indigo-900/40 transition-all duration-200"
                 />
               </div>
             </div>
@@ -98,11 +104,11 @@ const Login = () => {
                 <label htmlFor="password" className="block text-gray-700 dark:text-gray-300 text-xs font-bold uppercase tracking-wider">
                   Password
                 </label>
-                <a href="#" className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors font-medium">Forgot?</a>
+                <Link to="/forgot-password" className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors font-medium">Forgot?</Link>
               </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <svg className="w-5 h-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-purple-500 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
                 </div>
@@ -113,7 +119,7 @@ const Login = () => {
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="••••••••"
-                  className="w-full bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-xl pl-12 pr-12 py-3.5 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/30 transition-all duration-200"
+                  className="w-full bg-gray-50 dark:bg-gray-900/50 border-2 border-gray-300 dark:border-gray-600 rounded-xl pl-12 pr-12 py-3.5 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-gray-500 dark:focus:border-gray-400 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-900/40 transition-all duration-200"
                 />
                 <button
                   type="button"
@@ -137,8 +143,8 @@ const Login = () => {
             <button
               type="submit"
               disabled={status.loading}
-              className={`w-full py-3.5 px-4 rounded-lg font-semibold text-white transition-colors duration-200 ${
-                status.loading ? "bg-indigo-400 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-700"
+              className={`w-full py-3.5 px-4 rounded-xl font-semibold text-white transition-all duration-200 shadow-lg ${
+                status.loading ? "bg-indigo-400 cursor-not-allowed shadow-indigo-400/30" : "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-indigo-600/30 hover:shadow-lg hover:shadow-indigo-600/40"
               }`}
             >
               <span className="relative z-10 flex items-center justify-center gap-2">

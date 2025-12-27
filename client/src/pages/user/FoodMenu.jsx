@@ -3,46 +3,46 @@ import React, { useEffect, useMemo, useState } from 'react';
 const FoodMenu = () => {
     const weeklyMenu = {
         Monday: {
-            breakfast: { items: ["Masala Dosa", "Coconut Chutney", "Filter Coffee"], time: "7:30 - 8:30 AM", color: "from-amber-50 to-orange-100" },
-            lunch: { items: ["Paneer Butter Masala", "Butter Naan", "Jeera Rice"], time: "12:30 - 1:40 PM", color: "from-emerald-50 to-teal-100" },
-            snacks: { items: ["Samosa", "Mint Chutney", "Ginger Chai"], time: "4:30 - 5:30 PM", color: "from-blue-50 to-indigo-100" },
-            nightmeal: { items: ["Dal Tadka", "Phulka", "Seasonal Veg Sabzi"], time: "7:30 - 8:40 PM", color: "from-purple-50 to-fuchsia-100" }
+            breakfast: { items: ["Shavige / Puliogare", "Veg Kurma", "Raitha", "Chutney", "Tea/Coffee/Milk"], time: "7:30 - 8:30 AM", color: "from-amber-50 to-orange-100" },
+            lunch: { items: ["Chapathi", "Beetroot Sukka", "Saothekai Sambar", "Dal", "Rasam", "White/Boiled Rice", "Buttermilk", "Papad", "Pickle"], time: "12:30 - 1:40 PM", color: "from-emerald-50 to-teal-100" },
+            snacks: { items: ["Samosa", "Tea/Coffee/Milk"], time: "4:30 - 5:30 PM", color: "from-blue-50 to-indigo-100" },
+            nightmeal: { items: ["Chapathi", "Omlet", "Southe Nugge Gassi"], time: "7:30 - 8:40 PM", color: "from-purple-50 to-fuchsia-100" }
         },
         Tuesday: {
-                breakfast: { items: ["Poha", "Sev & Pomegranate", "Jalebi"], time: "7:30 - 8:30 AM", color: "from-amber-50 to-orange-100" },
-                lunch: { items: ["Hyderabadi Biryani", "Mirchi Ka Salan", "Mix Veg Raita"], time: "12:30 - 1:40 PM", color: "from-emerald-50 to-teal-100" },
-                snacks: { items: ["Vada Pav", "Green Chutney", "Hot Coffee"], time: "4:30 - 5:30 PM", color: "from-blue-50 to-indigo-100" },
-                nightmeal: { items: ["Egg Curry", "Steamed Rice", "Roasted Papad"], time: "7:30 - 8:40 PM", color: "from-purple-50 to-fuchsia-100" }
+                breakfast: { items: ["Puri", "Sagu/Kurma", "Tea/Coffee/Milk"], time: "7:30 - 8:30 AM", color: "from-amber-50 to-orange-100" },
+                lunch: { items: ["Chapathi", "Alu Mutter Gassi", "Soppu Sambar", "Beans Pallya", "Rasam", "White/Boiled Rice", "Buttermilk", "Papad", "Pickle"], time: "12:30 - 1:40 PM", color: "from-emerald-50 to-teal-100" },
+                snacks: { items: ["Burger", "Tea/Coffee/Milk"], time: "4:30 - 5:30 PM", color: "from-blue-50 to-indigo-100" },
+                nightmeal: { items: ["Chapathi", "Chicken Kabab / Chicken Chilly"], time: "7:30 - 8:40 PM", color: "from-purple-50 to-fuchsia-100" }
         },
         Wednesday: {
-                breakfast: { items: ["Idli Sambhar", "Tomato Chutney", "Vada"], time: "7:30 - 8:30 AM", color: "from-amber-50 to-orange-100" },
-                lunch: { items: ["Rajma Chawal", "Aloo Jeera", "Curd"], time: "12:30 - 1:40 PM", color: "from-emerald-50 to-teal-100" },
-                snacks: { items: ["Dhokla", "Green Chutney", "Tea"], time: "4:30 - 5:30 PM", color: "from-blue-50 to-indigo-100" },
-                nightmeal: { items: ["Mix Veg", "Roti", "Dal Makhani"], time: "7:30 - 8:40 PM", color: "from-purple-50 to-fuchsia-100" }
+                breakfast: { items: ["Set Dosa", "Sambar", "Chutney", "Tomato Rice", "Tea/Coffee/Milk"], time: "7:30 - 8:30 AM", color: "from-amber-50 to-orange-100" },
+                lunch: { items: ["Chapathi", "Bende Gassi", "Mix Veg Sambar", "Thonde Kai Pallya", "Tomato Rasam", "White/Boiled Rice", "Buttermilk", "Papad", "Pickle"], time: "12:30 - 1:40 PM", color: "from-emerald-50 to-teal-100" },
+                snacks: { items: ["Veg Cutlet", "Tea/Coffee/Milk"], time: "4:30 - 5:30 PM", color: "from-blue-50 to-indigo-100" },
+                nightmeal: { items: ["Chapathi", "Egg Masala", "Bendi Masala", "Heerekai"], time: "7:30 - 8:40 PM", color: "from-purple-50 to-fuchsia-100" }
         },
         Thursday: {
-                breakfast: { items: ["Aloo Paratha", "Curd", "Pickle"], time: "7:30 - 8:30 AM", color: "from-amber-50 to-orange-100" },
-                lunch: { items: ["Veg Pulao", "Kadahi Paneer", "Raita"], time: "12:30 - 1:40 PM", color: "from-emerald-50 to-teal-100" },
-                snacks: { items: ["Pakora", "Sweet Chutney", "Tea"], time: "4:30 - 5:30 PM", color: "from-blue-50 to-indigo-100" },
-                nightmeal: { items: ["Bhindi Fry", "Phulka", "Moong Dal"], time: "7:30 - 8:40 PM", color: "from-purple-50 to-fuchsia-100" }
+                breakfast: { items: ["Goli Vada", "Sambar", "Chutney", "Tea/Coffee/Milk"], time: "7:30 - 8:30 AM", color: "from-amber-50 to-orange-100" },
+                lunch: { items: ["Chapathi", "Kai Kudu Gassi", "Kumbla Kadi Sambar", "Bende Sukka Pallya", "Lemon Rasam", "White/Boiled Rice", "Buttermilk", "Papad", "Pickle"], time: "12:30 - 1:40 PM", color: "from-emerald-50 to-teal-100" },
+                snacks: { items: ["Ambade Vada", "Tea/Coffee/Milk"], time: "4:30 - 5:30 PM", color: "from-blue-50 to-indigo-100" },
+                nightmeal: { items: ["Chapathi", "Chicken Sukka / Chicken Munchi"], time: "7:30 - 8:40 PM", color: "from-purple-50 to-fuchsia-100" }
         },
         Friday: {
-                breakfast: { items: ["Uttapam", "Sambar", "Coconut Chutney"], time: "7:30 - 8:30 AM", color: "from-amber-50 to-orange-100" },
-                lunch: { items: ["Chole Bhature", "Lassi", "Onion Salad"], time: "12:30 - 1:40 PM", color: "from-emerald-50 to-teal-100" },
-                snacks: { items: ["Bhel Puri", "Sev", "Lemon Soda"], time: "4:30 - 5:30 PM", color: "from-blue-50 to-indigo-100" },
-                nightmeal: { items: ["Matar Paneer", "Jeera Rice", "Roti"], time: "7:30 - 8:40 PM", color: "from-purple-50 to-fuchsia-100" }
+                breakfast: { items: ["Neer Dosa", "Veg Pulav", "Raitha", "Chutney", "Tea/Coffee/Milk"], time: "7:30 - 8:30 AM", color: "from-amber-50 to-orange-100" },
+                lunch: { items: ["Chapathi", "Chana Masala", "Bende Nugge Sambar", "Suran Pallya", "Payasam", "White/Boiled Rice", "Buttermilk", "Papad", "Pickle"], time: "12:30 - 1:40 PM", color: "from-emerald-50 to-teal-100" },
+                snacks: { items: ["Upma (Small Rava)", "Tea/Coffee/Milk"], time: "4:30 - 5:30 PM", color: "from-blue-50 to-indigo-100" },
+                nightmeal: { items: ["Chapathi", "Kurma or Mix Sambar"], time: "7:30 - 8:40 PM", color: "from-purple-50 to-fuchsia-100" }
         },
         Saturday: {
-                breakfast: { items: ["Pav Bhaji", "Butter", "Onion"], time: "7:30 - 8:30 AM", color: "from-amber-50 to-orange-100" },
-                lunch: { items: ["South Indian Thali", "Curd", "Payasam"], time: "12:30 - 1:40 PM", color: "from-emerald-50 to-teal-100" },
-                snacks: { items: ["French Fries", "Sauce", "Coffee"], time: "4:30 - 5:30 PM", color: "from-blue-50 to-indigo-100" },
-                nightmeal: { items: ["Fried Rice", "Manchurian", "Spring Roll"], time: "7:30 - 8:40 PM", color: "from-purple-50 to-fuchsia-100" }
+                breakfast: { items: ["Parotha", "Bisi Bele Bath", "Chutney", "Tea/Coffee/Milk"], time: "7:30 - 8:30 AM", color: "from-amber-50 to-orange-100" },
+                lunch: { items: ["Chapathi", "Bende Sambar", "Cabbage Pallya", "Chana Dal", "White/Boiled Rice", "Buttermilk", "Papad", "Pickle"], time: "12:30 - 1:40 PM", color: "from-emerald-50 to-teal-100" },
+                snacks: { items: ["Alu Bonda", "Tea/Coffee/Milk"], time: "4:30 - 5:30 PM", color: "from-blue-50 to-indigo-100" },
+                nightmeal: { items: ["Chapathi", "Omlet", "Alu Mutter", "Tomato Rasam/Dal"], time: "7:30 - 8:40 PM", color: "from-purple-50 to-fuchsia-100" }
         },
         Sunday: {
-                breakfast: { items: ["Puri Sabzi", "Halwa", "Tea"], time: "7:30 - 8:30 AM", color: "from-amber-50 to-orange-100" },
-                lunch: { items: ["Special Biryani", "Salad", "Gulab Jamun"], time: "12:30 - 1:40 PM", color: "from-emerald-50 to-teal-100" },
-                snacks: { items: ["Sandwich", "Chips", "Cold Coffee"], time: "4:30 - 5:30 PM", color: "from-blue-50 to-indigo-100" },
-                nightmeal: { items: ["Khichdi", "Papad", "Achar"], time: "7:30 - 8:40 PM", color: "from-purple-50 to-fuchsia-100" }
+                breakfast: { items: ["Masala Dosa", "Tea/Coffee/Milk"], time: "7:30 - 8:30 AM", color: "from-amber-50 to-orange-100" },
+                lunch: { items: ["White Rice", "Sambar", "Rasam", "Curd Rice", "Banana"], time: "12:30 - 1:40 PM", color: "from-emerald-50 to-teal-100" },
+                snacks: { items: ["Samosa", "Tea/Coffee/Milk"], time: "4:30 - 5:30 PM", color: "from-blue-50 to-indigo-100" },
+                nightmeal: { items: ["Biryani and Pulav", "Chicken Gravy", "Paneer Gravy"], time: "7:30 - 8:40 PM", color: "from-purple-50 to-fuchsia-100" }
         }
     };
 
@@ -76,8 +76,8 @@ const FoodMenu = () => {
                                 onClick={() => setActiveDay(day)}
                                 className={`group relative px-5 py-3 md:px-6 md:py-4 rounded-xl md:rounded-2xl transition-all duration-300 flex-shrink-0 snap-start ${
                                     activeDay === day 
-                                    ? "bg-indigo-600 text-white shadow-xl shadow-indigo-200 dark:shadow-indigo-900/30 -translate-y-1" 
-                                    : "bg-slate-100 dark:bg-gray-700 text-slate-500 dark:text-gray-200 hover:bg-white dark:hover:bg-gray-600 hover:shadow-md"
+                                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-300/50 dark:shadow-indigo-900/30 -translate-y-1" 
+                                    : "bg-slate-100 dark:bg-gray-700 text-slate-500 dark:text-gray-200 hover:bg-white dark:hover:bg-gray-600 hover:shadow-md shadow-sm shadow-slate-200/60 dark:shadow-black/20"
                                 }`}
                             >
                                 <span className="block text-[8px] md:text-[10px] uppercase font-black opacity-60 tracking-widest text-center">Day</span>
@@ -102,7 +102,7 @@ const FoodMenu = () => {
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
                                     </div>
-                                    <span className="text-[9px] md:text-[10px] font-black uppercase text-indigo-700 dark:text-indigo-300 tracking-widest bg-white/60 dark:bg-gray-900/50 px-3 py-1.5 rounded-full border border-white dark:border-gray-700 backdrop-blur-sm">
+                                    <span className="text-xs md:text-sm font-bold uppercase text-indigo-700 dark:text-indigo-300 tracking-wide bg-white/60 dark:bg-gray-900/50 px-3 py-1.5 rounded-full border border-white dark:border-gray-700 backdrop-blur-sm font-mono">
                                         {data.time}
                                     </span>
                                 </div>
@@ -112,10 +112,10 @@ const FoodMenu = () => {
                                 <div className="space-y-3 md:space-y-4">
                                     {data.items.map((item, i) => (
                                         <div key={i} className="flex items-center gap-3">
-                                            <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-white/80 dark:bg-gray-900/70 flex items-center justify-center shadow-sm text-[10px] md:text-xs font-bold text-slate-500 dark:text-gray-300 flex-shrink-0">
+                                            <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-white/80 dark:bg-gray-900/70 flex items-center justify-center shadow-sm text-xs md:text-sm font-bold text-slate-500 dark:text-gray-300 flex-shrink-0">
                                                 0{i + 1}
                                             </div>
-                                            <span className="font-bold text-sm md:text-base text-slate-700 dark:text-gray-200 leading-tight">{item}</span>
+                                            <span className="font-bold text-base md:text-lg text-slate-700 dark:text-gray-200 leading-tight">{item}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -153,8 +153,8 @@ const FoodMenu = () => {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 flex-grow">
                                     {Object.entries(weeklyMenu[day]).map(([meal, data]) => (
                                         <div key={meal} className="border-l-2 border-slate-100 dark:border-gray-700 pl-4 py-1">
-                                            <span className="text-[8px] md:text-[10px] font-black text-slate-400 dark:text-gray-400 uppercase tracking-widest">{meal}</span>
-                                            <p className="font-bold text-slate-700 dark:text-gray-300 text-xs md:text-sm mt-1 line-clamp-1">{data.items.join(" • ")}</p>
+                                            <span className="text-[10px] md:text-xs font-black text-slate-400 dark:text-gray-400 uppercase tracking-widest">{meal}</span>
+                                            <p className="font-bold text-slate-700 dark:text-gray-300 text-sm md:text-base mt-1 line-clamp-1">{data.items.join(" • ")}</p>
                                         </div>
                                     ))}
                                 </div>

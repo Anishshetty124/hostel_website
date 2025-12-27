@@ -19,7 +19,7 @@ const UserLayout = () => {
 
     const handleLogout = () => {
         logout();
-        navigate("/login");
+        navigate("/user/dashboard");
     };
 
     return (

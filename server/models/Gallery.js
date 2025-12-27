@@ -1,9 +1,23 @@
 const mongoose = require('mongoose');
 
 const gallerySchema = new mongoose.Schema({
-    imageUrl: { type: String, required: true },
+    // New unified fields
+    type: { type: String, enum: ['image', 'video'], default: 'image' },
+    mediaUrl: { type: String },
+    title: { type: String },
+    category: { type: String, default: 'Hostel' },
+
+    // Backward-compatible legacy fields
+    imageUrl: { type: String },
     description: { type: String },
-    uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' } // Usually Admin
+
+    provider: { type: String, enum: ['imagekit', 'legacy', 'custom'], default: 'imagekit' },
+    fileId: { type: String },
+    uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    
+    // Likes/Dislikes
+    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    dislikes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('Gallery', gallerySchema);

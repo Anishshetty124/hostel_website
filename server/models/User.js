@@ -30,6 +30,12 @@ const userSchema = new mongoose.Schema({
         enum: ['student', 'admin', 'warden'],
         default: 'student'
     },
+    resetPasswordCode: {
+        type: String
+    },
+    resetPasswordExpiry: {
+        type: Date
+    },
     createdAt: {
         type: Date,
         default: Date.now

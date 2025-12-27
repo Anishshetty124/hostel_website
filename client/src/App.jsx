@@ -5,6 +5,7 @@ import { ProtectedRoute, AdminRoute } from './routes/ProtectedRoute';
 // Auth Pages
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
 
 // Layouts
 import UserLayout from './components/layouts/UserLayout';
@@ -32,6 +33,7 @@ function App() {
           {/* --- PUBLIC AUTH --- */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           
           {/* Redirect Root to User Dashboard */}
           <Route path="/" element={<Navigate to="/user/dashboard" replace />} />

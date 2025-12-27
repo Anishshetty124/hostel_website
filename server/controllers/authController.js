@@ -117,7 +117,8 @@ const login = async (req, res) => {
         firstName: validUser.firstName,
         lastName: validUser.lastName,
         email: validUser.email,
-        roomNumber: validUser.roomNumber
+        roomNumber: validUser.roomNumber,
+        role: validUser.role
       },
     });
 
@@ -150,10 +151,129 @@ const updateEmail = async (req, res) => {
       { new: true, runValidators: true }
     ).select("-password");
 
-    res.status(200).json(updatedUser);
+    // Return updated user with all fields including role
+    res.status(200).json({
+      user: {
+        id: updatedUser._id,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+        email: updatedUser.email,
+        roomNumber: updatedUser.roomNumber,
+        role: updatedUser.role
+      }
+    });
 
   } catch (error) {
     res.status(500).json({ message: "Server error updating profile." });
+  }
+};
+
+// --- 4. FORGOT PASSWORD - Request Reset Code ---
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required." });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) {
+      return res.status(404).json({ message: "No account found with this email." });
+    }
+
+    // Generate 6-digit code
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const resetExpiry = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+    // Store code in user document
+    user.resetPasswordCode = resetCode;
+    user.resetPasswordExpiry = resetExpiry;
+    await user.save();
+
+    // In production, send email here
+    console.log(`Password reset code for ${email}: ${resetCode}`);
+
+    res.status(200).json({ 
+      message: "Reset code sent to your email. Please check your inbox.",
+      // ONLY FOR DEVELOPMENT - Remove in production
+      code: process.env.NODE_ENV === 'development' ? resetCode : undefined
+    });
+
+  } catch (error) {
+    console.error("Forgot Password Error:", error);
+    res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+// --- 5. VERIFY RESET CODE ---
+const verifyResetCode = async (req, res) => {
+  try {
+    const { email, code } = req.body;
+
+    if (!email || !code) {
+      return res.status(400).json({ message: "Email and code are required." });
+    }
+
+    const user = await User.findOne({ 
+      email: email.toLowerCase().trim(),
+      resetPasswordCode: code,
+      resetPasswordExpiry: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired code." });
+    }
+
+    res.status(200).json({ message: "Code verified successfully." });
+
+  } catch (error) {
+    console.error("Verify Code Error:", error);
+    res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+// --- 6. RESET PASSWORD ---
+const resetPassword = async (req, res) => {
+  try {
+    const { email, code, newPassword } = req.body;
+
+    if (!email || !code || !newPassword) {
+      return res.status(400).json({ message: "All fields are required." });
+    }
+
+    // Validate password
+    const passwordRegex = /^(?=.*[A-Z])(?=.*[!@#$&*]).{6,}$/;
+    if (!passwordRegex.test(newPassword)) {
+      return res.status(400).json({ 
+        message: "Password must be at least 6 characters, contain 1 capital letter and 1 special character." 
+      });
+    }
+
+    const user = await User.findOne({ 
+      email: email.toLowerCase().trim(),
+      resetPasswordCode: code,
+      resetPasswordExpiry: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired code." });
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    
+    // Clear reset fields
+    user.resetPasswordCode = undefined;
+    user.resetPasswordExpiry = undefined;
+    await user.save();
+
+    res.status(200).json({ message: "Password reset successfully. You can now login." });
+
+  } catch (error) {
+    console.error("Reset Password Error:", error);
+    res.status(500).json({ message: "Internal server error." });
   }
 };
 
@@ -161,5 +281,8 @@ const updateEmail = async (req, res) => {
 module.exports = {
   register,
   login,
-  updateEmail
+  updateEmail,
+  forgotPassword,
+  verifyResetCode,
+  resetPassword
 };

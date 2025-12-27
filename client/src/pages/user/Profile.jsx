@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useState, useEffect, useContext } from "react";
 import axios from "axios";
+import { AuthContext } from "../../context/AuthContext";
 
 const Profile = () => {
-  const { user } = useOutletContext(); // Get User from Layout
+  const { user, token } = useContext(AuthContext); // Use AuthContext instead of outlet
   
   // State for Edit Mode
   const [isEditing, setIsEditing] = useState(false);
@@ -49,7 +49,7 @@ const Profile = () => {
       const stored = JSON.parse(localStorage.getItem("userInfo"));
       
       // 3. Update the email field
-      const updatedUserInfo = { ...stored, user: { ...stored.user, email: formData.email } };
+      const updatedUserInfo = { ...stored, user: { ...stored.user, ...res.data.user } };
       
       // 4. Save it back to Local Storage
       localStorage.setItem("userInfo", JSON.stringify(updatedUserInfo));
