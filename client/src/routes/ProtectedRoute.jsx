@@ -1,0 +1,20 @@
+import { useContext } from 'react';
+import { Navigate, Outlet } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
+
+// 1. Basic Protection (Any logged in user)
+export const ProtectedRoute = () => {
+    const { user, loading } = useContext(AuthContext);
+    if (loading) return <div>Loading...</div>; 
+    return user ? <Outlet /> : <Navigate to="/login" />;
+};
+
+// 2. Admin Protection (Only Warden)
+// THE ERROR HAPPENED BECAUSE THIS PART WAS MISSING OR NOT EXPORTED
+export const AdminRoute = () => {
+    const { user, loading } = useContext(AuthContext);
+    if (loading) return <div>Loading...</div>;
+    
+    // Check if role is admin
+    return user && user.role === 'admin' ? <Outlet /> : <Navigate to="/dashboard" />;
+};
