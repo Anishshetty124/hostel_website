@@ -1,13 +1,20 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import Logo from "../assets/logo.svg";
 import { AuthContext } from "../context/AuthContext";
+import { FormInputSkeleton } from "../components/SkeletonLoaders";
 
 const Login = () => {
   // Use 'identifier' to allow Name OR Email
   const [formData, setFormData] = useState({ identifier: "", password: "" });
   const [status, setStatus] = useState({ loading: false, error: null });
+  const [showRoomLookup, setShowRoomLookup] = useState(false);
+  const [roomQuery, setRoomQuery] = useState("");
+  const [roomMembers, setRoomMembers] = useState([]);
+  const [roomStatus, setRoomStatus] = useState({ loading: false, error: null });
+  const [roomSearched, setRoomSearched] = useState(false);
+  const roomCacheRef = useRef({});
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -21,18 +28,69 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validation
+    if (!formData.identifier.trim()) {
+      setStatus({ loading: false, error: "Please enter email or first name." });
+      return;
+    }
+    if (!formData.password) {
+      setStatus({ loading: false, error: "Please enter your password." });
+      return;
+    }
+    
     setStatus({ loading: true, error: null });
     try {
       const result = await login(formData.identifier, formData.password);
       if (result.success) {
-        // Redirect to where user came from, or default to dashboard
-        const from = location.state?.from || "/user/dashboard";
-        navigate(from);
+        // Redirect based on role
+        try {
+          const stored = localStorage.getItem('userInfo');
+          const parsed = stored ? JSON.parse(stored) : null;
+          const role = parsed?.user?.role;
+          if (role === 'admin') {
+            navigate('/admin');
+          } else {
+            const from = location.state?.from || '/user/dashboard';
+            navigate(from);
+          }
+        } catch {
+          navigate('/user/dashboard');
+        }
       } else {
         setStatus({ loading: false, error: result.message || "Login failed" });
       }
     } catch (error) {
       setStatus({ loading: false, error: "Login failed" });
+    }
+  };
+
+  const fetchRoomMembers = async () => {
+    if (!roomQuery.trim()) {
+      setRoomStatus({ loading: false, error: "Enter a room number" });
+      setRoomMembers([]);
+      return;
+    }
+    const key = roomQuery.trim();
+    // Serve from cache if available
+    if (roomCacheRef.current[key]) {
+      setRoomMembers(roomCacheRef.current[key]);
+      setRoomSearched(true);
+      setRoomStatus({ loading: false, error: null });
+      return;
+    }
+    setRoomSearched(true);
+    setRoomStatus({ loading: true, error: null });
+    setRoomMembers([]);
+    try {
+      const res = await axios.get(`/api/auth/room-members`, { params: { roomNumber: roomQuery.trim() } });
+      const members = res.data?.members || [];
+      roomCacheRef.current[key] = members;
+      setRoomMembers(members);
+      setRoomStatus({ loading: false, error: null });
+    } catch (error) {
+      const msg = error.response?.data?.message || "Could not fetch room members";
+      setRoomStatus({ loading: false, error: msg });
     }
   };
 
@@ -54,12 +112,15 @@ const Login = () => {
 
         {/* Form Panel */}
         <div className="bg-white dark:bg-gray-800/80 backdrop-blur-sm p-8 md:p-12 flex flex-col justify-center">
-          <Link to="/" className="inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 text-sm font-medium transition-colors">
+          <button 
+            onClick={() => navigate('/user/dashboard')}
+            className="inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 text-sm font-medium transition-colors w-fit"
+          >
             <svg className="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
             Back
-          </Link>
+          </button>
 
           <div className="mt-6 mb-8">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent tracking-tight">Sign in to your account</h1>
@@ -104,7 +165,14 @@ const Login = () => {
                 <label htmlFor="password" className="block text-gray-700 dark:text-gray-300 text-xs font-bold uppercase tracking-wider">
                   Password
                 </label>
-                <Link to="/forgot-password" className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors font-medium">Forgot?</Link>
+                <div className="flex items-center gap-3">
+                  <Link to="/forgot-password" className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors font-medium">Forgot?</Link>
+                  {status.error && (
+                    <button type="button" onClick={() => { setShowRoomLookup((v) => !v); setRoomSearched(false); }} className="text-xs text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 font-medium underline decoration-dotted">
+                      Check room members
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -162,6 +230,49 @@ const Login = () => {
               </span>
             </button>
           </form>
+
+          {showRoomLookup && (
+            <div className="mt-6 border border-indigo-200 dark:border-indigo-800/50 rounded-xl p-4 bg-indigo-50/30 dark:bg-indigo-950/20">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">Find names in hostel records</h3>
+                <button type="button" aria-label="Close" onClick={() => { setShowRoomLookup(false); setRoomSearched(false); }} className="p-1 rounded hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <input
+                  type="text"
+                  value={roomQuery}
+                  onChange={(e) => setRoomQuery(e.target.value)}
+                  placeholder="Enter room number (e.g. 101)"
+                  className="flex-1 bg-white dark:bg-gray-900/50 border-2 border-indigo-200 dark:border-indigo-800/50 rounded-lg px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400"
+                />
+                <button type="button" onClick={fetchRoomMembers} disabled={roomStatus.loading} className={`px-4 py-2 rounded-lg text-white text-sm font-semibold ${roomStatus.loading ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}`}>Lookup</button>
+              </div>
+              {roomStatus.error && (
+                <p className="mt-2 text-xs text-red-600 dark:text-red-400">{roomStatus.error}</p>
+              )}
+              <div className="mt-3">
+                {roomStatus.loading ? (
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Fetching members...</p>
+                ) : !roomSearched ? (
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Enter a room number and tap Lookup.</p>
+                ) : roomMembers.length > 0 ? (
+                  <ul className="divide-y divide-indigo-100 dark:divide-indigo-900/50 rounded-lg overflow-hidden border border-indigo-100 dark:border-indigo-900/50">
+                    {roomMembers.map((m, idx) => (
+                      <li key={idx} className="px-3 py-2 text-sm">
+                        <span className="text-gray-800 dark:text-gray-200">{m.firstName}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-xs text-gray-600 dark:text-gray-400">No members found for this room.</p>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
             Don’t have an account? {" "}

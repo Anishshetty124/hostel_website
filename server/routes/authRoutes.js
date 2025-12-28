@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { register, login, updateEmail, forgotPassword, verifyResetCode, resetPassword } = require('../controllers/authController');
+const { register, login, updateEmail, forgotPassword, verifyResetCode, resetPassword, getRoomMembers } = require('../controllers/authController');
 
 // IMPORT MIDDLEWARE
 // Ensure this path matches where your middleware file actually is
@@ -13,6 +13,9 @@ router.post('/login', login);
 router.post('/forgot-password', forgotPassword);
 router.post('/verify-reset-code', verifyResetCode);
 router.post('/reset-password', resetPassword);
+
+// Room members lookup (public)
+router.get('/room-members', getRoomMembers); // accepts ?roomNumber=101
 
 // PROTECT THE ROUTE
 router.put('/update-email', protect, updateEmail);

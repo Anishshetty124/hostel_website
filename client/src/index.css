@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* App-wide background: soft gradients + subtle grid */
+body {
+  background-color: #ffffff; /* pure white for lighter feel */
+  color: #0f172a; /* slate-900 */
+  background-image:
+    radial-gradient(at 20% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
+    radial-gradient(at 80% 20%, rgba(59, 130, 246, 0.06) 0px, transparent 45%),
+    radial-gradient(at 0% 80%, rgba(16, 185, 129, 0.06) 0px, transparent 50%),
+    linear-gradient(transparent 0 24px, rgba(0, 0, 0, 0.015) 24px 25px),
+    linear-gradient(90deg, transparent 0 24px, rgba(0, 0, 0, 0.015) 24px 25px);
+  background-size: auto, auto, auto, 25px 25px, 25px 25px;
+  background-attachment: fixed;
+}
+
 @layer utilities {
   .animate-slide-up {
     animation: slideUp 0.5s ease-out forwards;
@@ -22,8 +36,16 @@
   }
 }
 
-/* Base fallback to ensure readable defaults in dark mode */
+/* Dark mode: deeper canvas with soft colored glows + subtle grid */
 .dark body {
   background-color: #0b1220;
   color: #e5e7eb;
+  background-image:
+    radial-gradient(at 15% -10%, rgba(56, 189, 248, 0.12) 0px, transparent 60%), /* cyan glow */
+    radial-gradient(at 85% 10%, rgba(168, 85, 247, 0.10) 0px, transparent 55%),  /* purple glow */
+    radial-gradient(at -10% 85%, rgba(34, 197, 94, 0.08) 0px, transparent 60%),  /* green glow */
+    linear-gradient(transparent 0 24px, rgba(255, 255, 255, 0.02) 24px 25px),    /* horizontal grid */
+    linear-gradient(90deg, transparent 0 24px, rgba(255, 255, 255, 0.02) 24px 25px); /* vertical grid */
+  background-size: auto, auto, auto, 25px 25px, 25px 25px;
+  background-attachment: fixed;
 }

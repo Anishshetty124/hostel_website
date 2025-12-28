@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from "react";
 import axios from "axios";
 import { AuthContext } from "../../context/AuthContext";
+import { ProfileSkeleton } from "../../components/SkeletonLoaders";
 
 const Profile = () => {
   const { user, token } = useContext(AuthContext); // Use AuthContext instead of outlet
@@ -37,22 +38,37 @@ const Profile = () => {
         return;
       }
       
-      // 1. Send Update to Backend
-      const res = await axios.put("http://localhost:5000/api/auth/update-email", 
+      // Validate email format before sending
+      if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        setStatus({ loading: false, error: "Please enter a valid email address.", success: null });
+        return;
+      }
+      
+      // 1. Send Update to Backend - use relative URL for correct API endpoint
+      const res = await axios.put("/api/auth/update-email", 
         { email: formData.email }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       // --- THE FIX: SYNC LOCAL STORAGE ---
       
-      // 2. Get the existing user data from storage
-      const stored = JSON.parse(localStorage.getItem("userInfo"));
-      
-      // 3. Update the email field
-      const updatedUserInfo = { ...stored, user: { ...stored.user, ...res.data.user } };
-      
-      // 4. Save it back to Local Storage
-      localStorage.setItem("userInfo", JSON.stringify(updatedUserInfo));
+      // 2. Get the existing user data from storage with error handling
+      try {
+        const stored = JSON.parse(localStorage.getItem("userInfo") || "{}");
+        if (!stored || typeof stored !== 'object') {
+          throw new Error('Invalid stored user data');
+        }
+        
+        // 3. Update the email field
+        const updatedUserInfo = { ...stored, user: { ...stored.user, ...res.data.user } };
+        
+        // 4. Save it back to Local Storage
+        localStorage.setItem("userInfo", JSON.stringify(updatedUserInfo));
+      } catch (storageErr) {
+        console.error('Storage error:', storageErr);
+        setStatus({ loading: false, error: "Failed to update local storage. Please refresh the page.", success: null });
+        return;
+      }
       
       // 5. Show success message
       setStatus({ loading: false, error: null, success: "Profile updated successfully!" });
@@ -73,7 +89,7 @@ const Profile = () => {
     }
   };
 
-  if (!user) return <div className="p-10 text-center dark:text-gray-300">Loading Profile...</div>;
+  if (!user) return <ProfileSkeleton />;
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 sm:space-y-8 animate-fade-in-up">

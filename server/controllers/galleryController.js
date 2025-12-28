@@ -22,8 +22,6 @@ const getGallery = async (req, res) => {
             uploadedBy: i.uploadedBy,
             provider: i.provider || (i.imageUrl ? 'legacy' : 'custom'),
             fileId: i.fileId || undefined,
-            likes: i.likes || [],
-            dislikes: i.dislikes || [],
             createdAt: i.createdAt,
         }));
         res.json(normalized);
@@ -114,78 +112,4 @@ const deleteMedia = async (req, res) => {
     }
 };
 
-// @desc    Toggle like on media
-// @route   POST /api/gallery/:id/like
-const toggleLike = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const userId = req.user._id;
-        
-        const doc = await Gallery.findById(id);
-        if (!doc) return res.status(404).json({ message: 'Not found' });
-        
-        const likeIndex = doc.likes.indexOf(userId);
-        const dislikeIndex = doc.dislikes.indexOf(userId);
-        
-        // Remove from dislikes if present
-        if (dislikeIndex > -1) {
-            doc.dislikes.splice(dislikeIndex, 1);
-        }
-        
-        // Toggle like
-        if (likeIndex > -1) {
-            doc.likes.splice(likeIndex, 1); // Unlike
-        } else {
-            doc.likes.push(userId); // Like
-        }
-        
-        await doc.save();
-        res.json({ 
-            success: true, 
-            liked: likeIndex === -1,
-            likes: doc.likes.length,
-            dislikes: doc.dislikes.length
-        });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// @desc    Toggle dislike on media
-// @route   POST /api/gallery/:id/dislike
-const toggleDislike = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const userId = req.user._id;
-        
-        const doc = await Gallery.findById(id);
-        if (!doc) return res.status(404).json({ message: 'Not found' });
-        
-        const likeIndex = doc.likes.indexOf(userId);
-        const dislikeIndex = doc.dislikes.indexOf(userId);
-        
-        // Remove from likes if present
-        if (likeIndex > -1) {
-            doc.likes.splice(likeIndex, 1);
-        }
-        
-        // Toggle dislike
-        if (dislikeIndex > -1) {
-            doc.dislikes.splice(dislikeIndex, 1); // Undislike
-        } else {
-            doc.dislikes.push(userId); // Dislike
-        }
-        
-        await doc.save();
-        res.json({ 
-            success: true, 
-            disliked: dislikeIndex === -1,
-            likes: doc.likes.length,
-            dislikes: doc.dislikes.length
-        });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-module.exports = { getGallery, uploadMedia, createMedia, deleteMedia, toggleLike, toggleDislike };
+module.exports = { getGallery, uploadMedia, createMedia, deleteMedia };

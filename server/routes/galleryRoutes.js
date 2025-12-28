@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const { getGallery, uploadMedia, createMedia, deleteMedia, toggleLike, toggleDislike } = require('../controllers/galleryController');
+const { getGallery, uploadMedia, createMedia, deleteMedia } = require('../controllers/galleryController');
 const { protect, admin } = require('../middleware/authMiddleware');
 
 // Configure multer for memory storage with size limits
@@ -20,8 +20,6 @@ router.post('/upload', protect, upload.single('file'), uploadMedia);
 router.post('/', protect, createMedia);
 router.delete('/:id', protect, deleteMedia);
 
-// Protected: like/dislike
-router.post('/:id/like', protect, toggleLike);
-router.post('/:id/dislike', protect, toggleDislike);
+// Likes/Dislikes removed
 
 module.exports = router;

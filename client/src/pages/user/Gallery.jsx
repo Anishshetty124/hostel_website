@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { ChevronDown } from 'lucide-react';
+import LoadingSpinner from '../../components/LoadingSpinner';
+import { GalleryGridSkeleton } from '../../components/SkeletonLoaders';
 
 const tabs = ['All', 'Photos', 'Videos', 'Rooms', 'Mess', 'Events'];
 const ITEMS_PER_PAGE = 6;
@@ -185,39 +187,7 @@ const Gallery = () => {
         }
     };
 
-    const toggleLike = async (id) => {
-        if (!token) {
-            navigate('/login', { state: { from: '/user/gallery' } });
-            return;
-        }
-        try {
-            const res = await axios.post(`/api/gallery/${id}/like`, {}, { 
-                headers: { Authorization: `Bearer ${token}` } 
-            });
-            // Update local state based on server response
-            await loadMedia(); // Reload to get fresh data
-        } catch (err) {
-            setError(err.response?.data?.message || 'Failed to like');
-            setTimeout(() => setError(null), 3000);
-        }
-    };
-
-    const toggleDislike = async (id) => {
-        if (!token) {
-            navigate('/login', { state: { from: '/user/gallery' } });
-            return;
-        }
-        try {
-            const res = await axios.post(`/api/gallery/${id}/dislike`, {}, { 
-                headers: { Authorization: `Bearer ${token}` } 
-            });
-            // Update local state based on server response
-            await loadMedia(); // Reload to get fresh data
-        } catch (err) {
-            setError(err.response?.data?.message || 'Failed to dislike');
-            setTimeout(() => setError(null), 3000);
-        }
-    };
+    // Likes/Dislikes removed
 
     const getFilteredMedia = () => {
         let filtered = media.filter((item) => {
@@ -251,8 +221,8 @@ const Gallery = () => {
     const selectedMedia = media.find(m => m._id === selectedId);
 
     const EmptyPhotoBox = ({ label = 'Coming Soon', onClick }) => (
-        <button type="button" onClick={onClick} className="bg-white dark:bg-gray-800 p-3 shadow-sm border-2 border-dashed border-gray-200 dark:border-gray-600 rounded-2xl flex flex-col items-center justify-center min-h-[250px] transition-colors hover:border-indigo-300 group cursor-pointer hover:bg-indigo-50 dark:hover:bg-gray-700 w-full">
-            <div className="w-12 h-12 bg-gray-50 dark:bg-gray-700 rounded-full flex items-center justify-center mb-3 group-hover:bg-indigo-50 dark:group-hover:bg-gray-600">
+        <button type="button" onClick={onClick} className="bg-white dark:bg-gray-800 p-3 shadow-lg shadow-gray-200/60 dark:shadow-black/10 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl flex flex-col items-center justify-center min-h-[250px] transition-colors hover:border-indigo-400 group cursor-pointer hover:bg-indigo-50 dark:hover:bg-gray-700 w-full">
+            <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-3 group-hover:bg-indigo-100 dark:group-hover:bg-gray-600 border border-gray-200 dark:border-transparent">
                 <span className="text-gray-300 dark:text-gray-500 group-hover:text-indigo-300 text-2xl">+</span>
             </div>
             <p className="text-gray-400 dark:text-gray-500 font-medium text-xs uppercase tracking-wider">{label}</p>
@@ -260,7 +230,7 @@ const Gallery = () => {
     );
 
     return (
-        <div className="max-w-7xl mx-auto p-3 sm:p-4 md:p-8 bg-[#FAFAFA] dark:bg-gray-900 min-h-screen">
+        <div className="max-w-7xl mx-auto p-3 sm:p-4 md:p-8 min-h-screen">
             {/* Header */}
             <header className="text-center mb-8">
                 <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-gray-100 mb-2">Hostel Life Gallery</h1>
@@ -411,11 +381,7 @@ const Gallery = () => {
 
             {/* Loading / Error */}
             {loading && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 mb-12">
-                    {Array.from({ length: 6 }).map((_, i) => (
-                        <div key={i} className="h-32 sm:h-40 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl" />
-                    ))}
-                </div>
+                <GalleryGridSkeleton count={6} />
             )}
 
             {error && (
@@ -515,7 +481,7 @@ const Gallery = () => {
                                                     <div className="pt-4 pb-2 px-2 flex items-center justify-between gap-2 min-w-0">
                                                         <p className="font-bold text-gray-800 dark:text-gray-200 text-sm flex-1 truncate">{photo.title || 'Hostel'}</p>
                                                         <span className="hidden sm:inline-flex text-[9px] font-black text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded-full uppercase flex-shrink-0">{photo.category || 'Hostel'}</span>
-                                                        {token && (user?.role === 'admin' || String(photo.uploadedBy) === String(user?.id || user?._id)) && (
+                                                        {token && String(photo.uploadedBy) === String(user?.id || user?._id) && (
                                                             <button 
                                                                 onClick={(e) => { 
                                                                     e.stopPropagation(); 
@@ -623,7 +589,7 @@ const Gallery = () => {
                                                     <div className="pt-4 pb-2 px-2 flex items-center justify-between gap-2 min-w-0">
                                                         <p className="font-bold text-gray-800 dark:text-gray-200 text-sm flex-1 truncate">{photo.title || activeFilter}</p>
                                                         <span className="hidden sm:inline-flex text-[9px] font-black text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded-full uppercase flex-shrink-0">{photo.category || activeFilter}</span>
-                                                        {token && (user?.role === 'admin' || String(photo.uploadedBy) === String(user?.id || user?._id)) && (
+                                                        {token && String(photo.uploadedBy) === String(user?.id || user?._id) && (
                                                             <button 
                                                                 onClick={(e) => { 
                                                                     e.stopPropagation(); 
@@ -688,7 +654,7 @@ const Gallery = () => {
 
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent">
                                                 <div className="absolute top-4 right-4">
-                                                    {token && (user?.role === 'admin' || String(vid.uploadedBy) === String(user?.id || user?._id)) && (
+                                                    {token && String(vid.uploadedBy) === String(user?.id || user?._id) && (
                                                         <button 
                                                             onClick={(e) => { 
                                                                 e.stopPropagation(); 

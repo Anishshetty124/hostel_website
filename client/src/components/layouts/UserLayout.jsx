@@ -23,13 +23,13 @@ const UserLayout = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-100 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex flex-col font-sans text-gray-900 dark:text-gray-100 transition-colors duration-300">
+        <div className="min-h-screen bg-gradient-to-br from-white via-slate-50 to-white dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex flex-col font-sans text-gray-900 dark:text-gray-100 transition-colors duration-300">
             
             {/* --- PREMIUM GLASS NAVBAR --- */}
             <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
                 scrolled 
-                    ? 'bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl shadow-lg border-b border-gray-200/50 dark:border-gray-700/50' 
-                    : 'bg-white/70 dark:bg-gray-900/70 backdrop-blur-md border-b border-gray-200/30 dark:border-gray-700/30'
+                    ? 'bg-indigo-50/90 dark:bg-gray-900/90 backdrop-blur-xl shadow-lg border-b border-indigo-200/60 dark:border-gray-700/50' 
+                    : 'bg-indigo-50/70 dark:bg-gray-900/70 backdrop-blur-md border-b border-indigo-200/40 dark:border-gray-700/30'
             }`}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 sm:h-24 flex justify-between items-center">
                     
@@ -112,7 +112,7 @@ const UserLayout = () => {
             </nav>
 
             {/* Main Content Area with Smooth Animations */}
-            <main className="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 pt-24 sm:pt-28 animate-fade-in-up">
+            <main className="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 pt-24 sm:pt-28 animate-fade-in-up bg-gradient-to-br from-gray-50 via-gray-100 to-slate-100 dark:from-gray-900 dark:to-gray-950 min-h-screen">
                 <Outlet context={{ user }} />
             </main>
         </div>

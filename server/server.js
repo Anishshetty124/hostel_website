@@ -9,10 +9,10 @@ const compression = require('compression');
 const authRoutes = require('./routes/authRoutes');
 const roomRoutes = require('./routes/roomRoutes');
 const foodRoutes = require('./routes/foodRoutes');
-const laundryRoutes = require('./routes/laundryRoutes');
 const complaintRoutes = require('./routes/complaintRoutes');
 const galleryRoutes = require('./routes/galleryRoutes');
 const gameRoutes = require('./routes/gameRoutes');
+const feedbackRoutes = require('./routes/feedbackRoutes');
 
 const app = express();
 
@@ -36,10 +36,10 @@ mongoose.connect(dbURI)
 app.use('/api/auth', authRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/food', foodRoutes);
-app.use('/api/laundry', laundryRoutes);
 app.use('/api/complaints', complaintRoutes);
 app.use('/api/gallery', galleryRoutes);
 app.use('/api/games', gameRoutes);
+app.use('/api/feedback', feedbackRoutes);
 
 // --- Global Error Handler ---
 app.use((err, req, res, next) => {

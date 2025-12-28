@@ -1,6 +1,27 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import LoadingSpinner from '../../components/LoadingSpinner';
+import { TextSkeleton } from '../../components/SkeletonLoaders';
 
 const FoodMenu = () => {
+    // Helper: parse time string and return end time in minutes from midnight
+    const parseTime = (timeStr) => {
+        const [start, end] = timeStr.split(' - ');
+        const endTime = end.trim();
+        let [time, period] = endTime.split(' ');
+        let [hours, minutes] = time.split(':').map(Number);
+        if (period === 'PM' && hours !== 12) hours += 12;
+        if (period === 'AM' && hours === 12) hours = 0;
+        return hours * 60 + minutes;
+    };
+
+    // Check if current time is past meal end time
+    const isPastMealTime = (timeStr) => {
+        const now = new Date();
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        const endMinutes = parseTime(timeStr);
+        return currentMinutes > endMinutes;
+    };
+
     const weeklyMenu = {
         Monday: {
             breakfast: { items: ["Shavige / Puliogare", "Veg Kurma", "Raitha", "Chutney", "Tea/Coffee/Milk"], time: "7:30 - 8:30 AM", color: "from-amber-50 to-orange-100" },
@@ -47,7 +68,34 @@ const FoodMenu = () => {
     };
 
     const currentDayName = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date());
+    
+    const isToday = (day) => {
+        const todayIndex = new Date().getDay();
+        const dayIndex = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].indexOf(day);
+        return todayIndex === dayIndex;
+    };
+
     const [activeDay, setActiveDay] = useState(weeklyMenu[currentDayName] ? currentDayName : "Monday");
+    
+    // Track manually toggled meals (not time-based)
+    const [manuallyToggled, setManuallyToggled] = useState(new Set());
+    
+    const buildOpenState = (dayData, day) => {
+        const base = Object.keys(dayData || {}).reduce((acc, key) => {
+            acc[key] = true;
+            return acc;
+        }, {});
+        // Auto-close meals whose time has passed for today
+        if (isToday(day)) {
+            Object.entries(dayData || {}).forEach(([mealKey, mealData]) => {
+                if (isPastMealTime(mealData.time)) {
+                    base[mealKey] = false;
+                }
+            });
+        }
+        return base;
+    };
+    const [openMeals, setOpenMeals] = useState(buildOpenState(weeklyMenu[currentDayName], currentDayName));
 
     // Order days so that today's day appears first
     const days = useMemo(() => {
@@ -55,6 +103,19 @@ const FoodMenu = () => {
         const todayIndex = new Date().getDay();
         return [...allDays.slice(todayIndex), ...allDays.slice(0, todayIndex)];
     }, []);
+
+    useEffect(() => {
+        setOpenMeals(buildOpenState(weeklyMenu[activeDay], activeDay));
+        setManuallyToggled(new Set());
+    }, [activeDay]);
+
+    useEffect(() => {
+        // Update UI every minute to reflect time-based changes
+        const id = setInterval(() => {
+            setOpenMeals(buildOpenState(weeklyMenu[activeDay], activeDay));
+        }, 60_000);
+        return () => clearInterval(id);
+    }, [activeDay]);
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-gray-900 font-sans text-slate-900 dark:text-gray-100 pb-10">
@@ -69,21 +130,30 @@ const FoodMenu = () => {
                     </div>
           
                     {/* Day Scroller - Hidden scrollbar but allows swiping on mobile */}
-                    <div className="w-full xl:w-auto flex gap-2 md:gap-3 overflow-x-auto pb-4 px-2 no-scrollbar snap-x touch-pan-x">
-                        {days.map((day) => (
-                            <button
-                                key={day}
-                                onClick={() => setActiveDay(day)}
-                                className={`group relative px-5 py-3 md:px-6 md:py-4 rounded-xl md:rounded-2xl transition-all duration-300 flex-shrink-0 snap-start ${
-                                    activeDay === day 
-                                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-300/50 dark:shadow-indigo-900/30 -translate-y-1" 
-                                    : "bg-slate-100 dark:bg-gray-700 text-slate-500 dark:text-gray-200 hover:bg-white dark:hover:bg-gray-600 hover:shadow-md shadow-sm shadow-slate-200/60 dark:shadow-black/20"
-                                }`}
-                            >
-                                <span className="block text-[8px] md:text-[10px] uppercase font-black opacity-60 tracking-widest text-center">Day</span>
-                                <span className="text-base md:text-lg font-bold">{day.substring(0, 3)}</span>
-                            </button>
-                        ))}
+                    <div className="w-full xl:w-auto flex flex-col gap-2">
+                        <div className="flex gap-2 md:gap-3 overflow-x-auto pb-4 px-2 no-scrollbar snap-x touch-pan-x">
+                        {days.map((day) => {
+                            const isTodayDay = isToday(day);
+                            return (
+                            <div key={day} className="relative flex flex-col items-center">
+                                <button
+                                    onClick={() => setActiveDay(day)}
+                                    className={`group relative px-5 py-3 md:px-6 md:py-4 rounded-xl md:rounded-2xl transition-all duration-300 flex-shrink-0 snap-start ${
+                                        activeDay === day 
+                                        ? "bg-indigo-600 text-white shadow-lg shadow-indigo-300/50 dark:shadow-indigo-900/30 -translate-y-1" 
+                                        : "bg-slate-100 dark:bg-gray-700 text-slate-500 dark:text-gray-200 hover:bg-white dark:hover:bg-gray-600 hover:shadow-md shadow-sm shadow-slate-200/60 dark:shadow-black/20"
+                                    }`}
+                                >
+                                    <span className="block text-[8px] md:text-[10px] uppercase font-black opacity-60 tracking-widest text-center">Day</span>
+                                    <span className="text-base md:text-lg font-bold">{day.substring(0, 3)}</span>
+                                </button>
+                                {isTodayDay && (
+                                    <span className="absolute -bottom-5 text-xs font-bold text-indigo-600 uppercase tracking-widest">Today</span>
+                                )}
+                            </div>
+                            );
+                        })}
+                        </div>
                     </div>
                 </div>
             </header>
@@ -92,10 +162,29 @@ const FoodMenu = () => {
                 {/* 2. DYNAMIC GRID FOR MEAL CARDS */}
                 {/* 1 col on mobile, 2 on tablet, 4 on desktop */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
-                    {Object.entries(weeklyMenu[activeDay]).map(([meal, data]) => (
-                        <div key={meal} className="group relative bg-white dark:bg-gray-800 rounded-[2rem] md:rounded-[2.5rem] p-1 shadow-xl shadow-slate-200/50 dark:shadow-black/10 transition-all duration-500">
-                            <div className={`h-full rounded-[1.8rem] md:rounded-[2.3rem] p-6 md:p-8 bg-gradient-to-br ${data.color} dark:from-gray-800 dark:to-gray-700 border border-white/60 dark:border-gray-700`}>
-                
+                    {Object.entries(weeklyMenu[activeDay]).map(([meal, data]) => {
+                        const isOpen = openMeals[meal] ?? true;
+                        const isManuallyToggled = manuallyToggled.has(meal);
+                        const isTimeClosedForToday = isToday(activeDay) && isPastMealTime(data.time);
+                        const shouldShowClosed = isTimeClosedForToday && !isManuallyToggled && !isOpen;
+
+                        const handleToggle = () => {
+                            setOpenMeals((prev) => ({ ...prev, [meal]: !isOpen }));
+                            setManuallyToggled((prev) => {
+                                const newSet = new Set(prev);
+                                if (newSet.has(meal)) {
+                                    newSet.delete(meal);
+                                } else {
+                                    newSet.add(meal);
+                                }
+                                return newSet;
+                            });
+                        };
+
+                        return (
+                        <div key={meal} className="group relative bg-white dark:bg-gray-800 rounded-[2rem] md:rounded-[2.5rem] p-1 shadow-xl shadow-gray-300/60 dark:shadow-black/10 transition-all duration-500">
+                            <div className={`h-full rounded-[1.8rem] md:rounded-[2.3rem] p-6 md:p-8 bg-gradient-to-br ${data.color} dark:from-gray-800 dark:to-gray-700 border border-gray-300 dark:border-gray-700`}>
+ 
                                 <div className="flex justify-between items-center mb-6 md:mb-8">
                                     <div className="p-2 md:p-3 bg-white dark:bg-gray-900 rounded-xl md:rounded-2xl shadow-sm border border-white/60 dark:border-gray-700/60">
                                         <svg className="w-5 h-5 md:w-6 md:h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -105,23 +194,34 @@ const FoodMenu = () => {
                                     <span className="text-xs md:text-sm font-bold uppercase text-indigo-700 dark:text-indigo-300 tracking-wide bg-white/60 dark:bg-gray-900/50 px-3 py-1.5 rounded-full border border-white dark:border-gray-700 backdrop-blur-sm font-mono">
                                         {data.time}
                                     </span>
+                                    <button
+                                        onClick={handleToggle}
+                                        className="ml-3 text-xs md:text-sm font-bold text-indigo-700 dark:text-indigo-200 underline"
+                                    >
+                                        {isOpen ? 'Hide' : 'Show'}
+                                    </button>
                                 </div>
 
                                 <h3 className="text-2xl md:text-3xl font-black capitalize text-slate-800 dark:text-gray-100 mb-4 md:mb-6 tracking-tight">{meal}</h3>
                 
-                                <div className="space-y-3 md:space-y-4">
-                                    {data.items.map((item, i) => (
-                                        <div key={i} className="flex items-center gap-3">
-                                            <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-white/80 dark:bg-gray-900/70 flex items-center justify-center shadow-sm text-xs md:text-sm font-bold text-slate-500 dark:text-gray-300 flex-shrink-0">
-                                                0{i + 1}
+                                {isOpen ? (
+                                    <div className="space-y-3 md:space-y-4">
+                                        {data.items.map((item, i) => (
+                                            <div key={i} className="flex items-center gap-3">
+                                                <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-white/80 dark:bg-gray-900/70 flex items-center justify-center shadow-sm text-xs md:text-sm font-bold text-slate-500 dark:text-gray-300 flex-shrink-0">
+                                                    0{i + 1}
+                                                </div>
+                                                <span className="font-bold text-base md:text-lg text-slate-700 dark:text-gray-200 leading-tight">{item}</span>
                                             </div>
-                                            <span className="font-bold text-base md:text-lg text-slate-700 dark:text-gray-200 leading-tight">{item}</span>
-                                        </div>
-                                    ))}
-                                </div>
+                                        ))}
+                                    </div>
+                                ) : shouldShowClosed ? (
+                                    <div className="text-sm font-semibold text-slate-600 dark:text-gray-300 opacity-80">Closed</div>
+                                ) : null}
                             </div>
                         </div>
-                    ))}
+                        );
+                    })}
                 </div>
 
                 {/* 3. FULL WEEKLY VIEW SECTION */}
@@ -137,8 +237,8 @@ const FoodMenu = () => {
                         {days.map((day) => (
                             <div 
                                 key={day} 
-                                className={`relative overflow-hidden bg-white dark:bg-gray-800 p-5 md:p-6 rounded-2xl md:rounded-[2rem] border transition-all duration-300 flex flex-col xl:flex-row xl:items-center gap-4 md:gap-8 ${
-                                    activeDay === day ? "border-indigo-600 ring-2 md:ring-4 ring-indigo-50 dark:ring-indigo-900/20" : "border-slate-100 dark:border-gray-700 hover:border-slate-200 dark:hover:border-gray-600"
+                                className={`relative overflow-hidden bg-white dark:bg-gray-800 p-5 md:p-6 rounded-2xl md:rounded-[2rem] border transition-all duration-300 flex flex-col xl:flex-row xl:items-center gap-4 md:gap-8 shadow-md hover:shadow-lg ${
+                                    activeDay === day ? "border-indigo-500 ring-2 md:ring-4 ring-indigo-100 dark:ring-indigo-900/20 shadow-indigo-100 dark:shadow-black/20" : "border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600"
                                 }`}
                             >
                                 <div className="min-w-[120px] flex justify-between items-center xl:block">

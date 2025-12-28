@@ -27,8 +27,8 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['student', 'admin', 'warden'],
-        default: 'student'
+        enum: ['user', 'admin'],
+        default: 'user'
     },
     resetPasswordCode: {
         type: String
@@ -42,11 +42,7 @@ const userSchema = new mongoose.Schema({
     }
 });
 
-// Add indexes for faster queries
-userSchema.index({ email: 1 }); // Email lookups (login)
-userSchema.index({ firstName: 1 }); // First name search (login)
-userSchema.index({ roomNumber: 1 }); // Room queries
-
-// --- THE CRITICAL FIX ---
+// Index for first name search (login)
+userSchema.index({ firstName: 1 });
 // Use module.exports directly. Do NOT use exports.User or { User }
 module.exports = mongoose.model('User', userSchema);

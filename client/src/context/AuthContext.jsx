@@ -7,27 +7,37 @@ export const AuthContext = createContext();
 
 // 2. Create the Provider (The Wrapper)
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [token, setToken] = useState(null);
-    const [loading, setLoading] = useState(true);
-
-    // Check if user is logged in when app loads
-    useEffect(() => {
-        const stored = localStorage.getItem('userInfo');
-        if (stored) {
-            try {
-                const parsed = JSON.parse(stored);
-                if (parsed?.user) setUser(parsed.user);
-                if (parsed?.token) setToken(parsed.token);
-            } catch {}
+    // Read localStorage synchronously during initialization for instant load
+    const [user, setUser] = useState(() => {
+        try {
+            const stored = localStorage.getItem('userInfo');
+            return stored ? JSON.parse(stored).user : null;
+        } catch {
+            return null;
         }
-        setLoading(false);
+    });
+
+    const [token, setToken] = useState(() => {
+        try {
+            const stored = localStorage.getItem('userInfo');
+            return stored ? JSON.parse(stored).token : null;
+        } catch {
+            return null;
+        }
+    });
+
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        // Auth data already loaded synchronously, mark as done immediately
+        const timer = setTimeout(() => setLoading(false), 100);
+        return () => clearTimeout(timer);
     }, []);
 
     // Accepts identifier (email or first name) per backend API
     const login = async (identifier, password) => {
         try {
-            const { data } = await axios.post('http://localhost:5000/api/auth/login', { identifier, password });
+            const { data } = await axios.post('/api/auth/login', { identifier, password });
             
             // Save login data
             localStorage.setItem('token', data.token);

@@ -1,4 +1,5 @@
 const Room = require('../models/Room'); // Ensure you have this model
+const HostelRecord = require('../models/HostelRecord');
 
 // 1. Create Room (Admin Only)
 const createRoom = async (req, res) => {
@@ -50,5 +51,14 @@ module.exports = {
     createRoom,
     getRooms,
     updateRoom,
-    deleteRoom
+    deleteRoom,
+    // Admin helper to view hostel records
+    getHostelRecords: async (req, res) => {
+        try {
+            const records = await HostelRecord.find().sort({ roomNumber: 1 });
+            res.status(200).json(records);
+        } catch (err) {
+            res.status(500).json({ message: err.message || 'Failed to fetch hostel records' });
+        }
+    }
 };

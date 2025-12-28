@@ -6,7 +6,8 @@ const {
     createRoom, 
     getRooms, 
     updateRoom, 
-    deleteRoom 
+    deleteRoom,
+    getHostelRecords
 } = require('../controllers/roomController');
 
 // 2. Import Middleware
@@ -22,4 +23,7 @@ router.put('/:id', protect, admin, updateRoom);
 
 router.delete('/:id', protect, admin, deleteRoom);
 
-module.exports = router;
+// Admin: view hostel records (authoritative room details)
+router.get('/records/all', protect, admin, getHostelRecords);
+
+module.exports = router; 

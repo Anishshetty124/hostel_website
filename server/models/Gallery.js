@@ -13,11 +13,7 @@ const gallerySchema = new mongoose.Schema({
 
     provider: { type: String, enum: ['imagekit', 'legacy', 'custom'], default: 'imagekit' },
     fileId: { type: String },
-    uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    
-    // Likes/Dislikes
-    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-    dislikes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+    uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Gallery', gallerySchema);

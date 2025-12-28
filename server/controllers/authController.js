@@ -5,14 +5,36 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const HostelRecord = require("../models/HostelRecord");
 
+// Import Email Service
+const { sendPasswordResetOTP, sendWelcomeEmail } = require("../utils/emailService");
+
 // --- 1. REGISTER ---
 const register = async (req, res) => {
   try {
+    // Helper to derive first name from a full name while stripping honorifics
+    const getFirstNameFromFullName = (fullName) => {
+      const HONORIFICS = [
+        'dr.', 'dr', 'mr.', 'mr', 'mrs.', 'mrs', 'ms.', 'ms', 'prof.', 'prof', 'sir', 'madam', 'shri', 'smt'
+      ];
+      if (!fullName || typeof fullName !== 'string') return '';
+      let s = fullName.trim();
+      // Normalize spaces and dots
+      s = s.replace(/\s+/g, ' ').trim();
+      const parts = s.split(' ');
+      // Drop leading honorific tokens
+      while (parts.length && HONORIFICS.includes(parts[0].toLowerCase())) {
+        parts.shift();
+      }
+      // First remaining token is the first name
+      const first = (parts[0] || '').trim();
+      // If first token still ends with a dot (e.g., 'Dr.'), strip it
+      return first.replace(/\.$/, '');
+    };
     const { firstName, lastName, email, password, roomNumber } = req.body;
 
-    // Basic Validation
-    if (!firstName || !lastName || !email || !password || !roomNumber) {
-      return res.status(400).json({ message: "All fields are required." });
+    // Basic Validation (make lastName optional)
+    if (!firstName || !email || !password || !roomNumber) {
+      return res.status(400).json({ message: "First name, email, password and room number are required." });
     }
 
     // Strict Password Policy
@@ -51,13 +73,14 @@ const register = async (req, res) => {
 
     const newUser = new User({
       firstName: firstName.trim(),
-      lastName: lastName.trim(),
+      lastName: (lastName || "").trim(),
       email: normalizedEmail,
       password: hashedPassword,
       roomNumber: roomNumber.trim(),
     });
 
     await newUser.save();
+
     res.status(201).json({ message: "Verification successful! Account created." });
 
   } catch (error) {
@@ -151,7 +174,6 @@ const updateEmail = async (req, res) => {
       { new: true, runValidators: true }
     ).select("-password");
 
-    // Return updated user with all fields including role
     res.status(200).json({
       user: {
         id: updatedUser._id,
@@ -191,14 +213,26 @@ const forgotPassword = async (req, res) => {
     user.resetPasswordExpiry = resetExpiry;
     await user.save();
 
-    // In production, send email here
-    console.log(`Password reset code for ${email}: ${resetCode}`);
-
-    res.status(200).json({ 
-      message: "Reset code sent to your email. Please check your inbox.",
-      // ONLY FOR DEVELOPMENT - Remove in production
-      code: process.env.NODE_ENV === 'development' ? resetCode : undefined
-    });
+    // Send OTP via email using Resend
+    try {
+      await sendPasswordResetOTP(user.email, user.firstName, resetCode);
+      
+      res.status(200).json({ 
+        message: "Reset code sent to your email. Please check your inbox.",
+        // ONLY FOR DEVELOPMENT - Remove in production
+        code: process.env.NODE_ENV === 'development' ? resetCode : undefined
+      });
+    } catch (emailError) {
+      console.error("Email sending failed:", emailError);
+      
+      // If email fails, still let them know but log it
+      res.status(200).json({ 
+        message: "Reset code generated. Please check your email.",
+        // Show code in development if email fails
+        code: process.env.NODE_ENV === 'development' ? resetCode : undefined,
+        warning: "Email delivery may be delayed. Please try again if you don't receive it."
+      });
+    }
 
   } catch (error) {
     console.error("Forgot Password Error:", error);
@@ -277,6 +311,53 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// --- 7. GET ROOM MEMBERS (for name checking during login/register issues) ---
+const getRoomMembers = async (req, res) => {
+  try {
+    const roomNumber = (req.query.roomNumber || req.params.roomNumber || "").trim();
+
+    if (!roomNumber) {
+      return res.status(400).json({ message: "Room number is required." });
+    }
+
+    // Fetch ALL hostel records for the room (some rooms have multiple occupants)
+    const records = await HostelRecord.find({ roomNumber });
+    if (!records || records.length === 0) {
+      return res.status(404).json({ message: "No hostel record found for this room." });
+    }
+
+    const namesSet = new Set();
+
+    for (const rec of records) {
+      // Prefer explicit firstName field if present
+      if (rec.firstName && rec.firstName.trim()) {
+        namesSet.add(rec.firstName.trim());
+      } else if (rec.fullName && rec.fullName.trim()) {
+        // Derive first name from fullName, ignoring honorifics
+        const chunks = String(rec.fullName)
+          .split(/[\n,;|]+/)
+          .map((s) => s.trim())
+          .filter(Boolean);
+        for (const chunk of chunks) {
+          const first = getFirstNameFromFullName(chunk);
+          if (first) namesSet.add(first);
+        }
+      }
+    }
+
+    const members = Array.from(namesSet).sort((a, b) => a.localeCompare(b)).map((firstName) => ({ firstName }));
+
+    return res.status(200).json({
+      roomNumber,
+      count: members.length,
+      members,
+    });
+  } catch (error) {
+    console.error("Get Room Members Error:", error);
+    res.status(500).json({ message: "Internal server error." });
+  }
+};
+
 // --- CRITICAL: EXPORT ALL FUNCTIONS ---
 module.exports = {
   register,
@@ -284,5 +365,6 @@ module.exports = {
   updateEmail,
   forgotPassword,
   verifyResetCode,
-  resetPassword
+  resetPassword,
+  getRoomMembers,
 };

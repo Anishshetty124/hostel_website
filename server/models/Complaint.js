@@ -2,9 +2,26 @@ const mongoose = require('mongoose');
 
 const complaintSchema = new mongoose.Schema({
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    title: { type: String, required: true },
-    description: { type: String, required: true },
-    status: { type: String, enum: ['Pending', 'Resolved'], default: 'Pending' }
+    title: { type: String, required: true, trim: true },
+    description: { type: String, required: true, trim: true },
+    roomNumber: { type: String, required: true, trim: true },
+    category: { type: String, enum: ['Electrical', 'Plumbing', 'Cleaning', 'Other'], default: 'Other' },
+    urgency: { type: String, enum: ['Low', 'Medium', 'High'], default: 'Medium' },
+    status: { type: String, enum: ['Pending', 'In Progress', 'Resolved'], default: 'Pending' },
+    replies: [
+        {
+            message: { type: String, required: true, trim: true },
+            by: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+            role: { type: String, trim: true },
+            createdAt: { type: Date, default: Date.now }
+        }
+    ]
 }, { timestamps: true });
+
+// Helpful indexes
+complaintSchema.index({ user: 1, createdAt: -1 });
+complaintSchema.index({ roomNumber: 1 });
+complaintSchema.index({ category: 1 });
+complaintSchema.index({ status: 1 });
 
 module.exports = mongoose.model('Complaint', complaintSchema);
