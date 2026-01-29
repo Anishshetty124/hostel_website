@@ -16,6 +16,9 @@ const feedbackRoutes = require('./routes/feedbackRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const pushRoutes = require('./routes/pushRoutes');
 
+// Start notification cron jobs (creative food/game notifications)
+require('./utils/notificationCron');
+
 const app = express();
 
 // --- Middlewares ---
