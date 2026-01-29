@@ -65,7 +65,7 @@ const Profile = () => {
         // 4. Save it back to Local Storage
         localStorage.setItem("userInfo", JSON.stringify(updatedUserInfo));
       } catch (storageErr) {
-        console.error('Storage error:', storageErr);
+        // Storage error handled
         setStatus({ loading: false, error: "Failed to update local storage. Please refresh the page.", success: null });
         return;
       }
@@ -80,7 +80,7 @@ const Profile = () => {
       // ------------------------------------
       
     } catch (err) {
-      console.error(err);
+      // Error handled
       setStatus({ 
         loading: false, 
         error: err.response?.data?.message || "Failed to update profile.", 

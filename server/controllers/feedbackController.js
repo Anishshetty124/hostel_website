@@ -31,7 +31,7 @@ const sendFeedback = async (req, res) => {
 
     return res.json({ message: 'Feedback sent successfully' });
   } catch (err) {
-    console.error('sendFeedback error:', err);
+    // sendFeedback error handled
     return res.status(500).json({ message: 'Failed to send feedback' });
   }
 };

@@ -84,7 +84,7 @@ const register = async (req, res) => {
     res.status(201).json({ message: "Verification successful! Account created." });
 
   } catch (error) {
-    console.error("Registration Error:", error);
+    // Registration Error handled
     res.status(500).json({ message: "Internal server error." });
   }
 };
@@ -146,7 +146,7 @@ const login = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Login Error:", error);
+    // Login Error handled
     res.status(500).json({ message: "Internal server error." });
   }
 };
@@ -223,7 +223,7 @@ const forgotPassword = async (req, res) => {
         code: process.env.NODE_ENV === 'development' ? resetCode : undefined
       });
     } catch (emailError) {
-      console.error("Email sending failed:", emailError);
+      // Email sending failed handled
       
       // If email fails, still let them know but log it
       res.status(200).json({ 

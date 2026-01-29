@@ -1,3 +1,5 @@
+import Sudoku from './pages/user/Sudoku';
+import GameArena from './pages/user/GameArena';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthContext, AuthProvider } from './context/AuthContext';
 import { ProtectedRoute, AdminRoute } from './routes/ProtectedRoute';
@@ -22,6 +24,8 @@ import Gallery from './pages/user/Gallery';
 import Feedback from './pages/user/Feedback';
 import Complaints from './pages/user/Complaints';
 import Games from './pages/user/Games';
+import SnakeGame from './pages/user/SnakeGame';
+import WhackAMole from './pages/user/WhackAMole';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -39,7 +43,7 @@ const RootRedirect = () => {
   
   // If admin, go to admin dashboard
   if (user?.role === 'admin') {
-    console.log('User is admin, redirecting to /admin');
+    // User is admin, redirecting to /admin
     return <Navigate to="/admin" replace />;
   }
   
@@ -79,13 +83,15 @@ const AppRoutes = () => {
         <Route path="food" element={<FoodMenu />} />
         <Route path="gallery" element={<Gallery />} />
 
-        {/* Protected Features */}
-        <Route element={<ProtectedRoute />}>
-          <Route path="rooms" element={<MyRoom />} />
-          <Route path="laundry" element={<Feedback />} />
-          <Route path="complaints" element={<Complaints />} />
-          <Route path="games" element={<Games />} />
-        </Route>
+        {/* Features (no protection needed) */}
+        <Route path="rooms" element={<MyRoom />} />
+        <Route path="laundry" element={<Feedback />} />
+        <Route path="complaints" element={<Complaints />} />
+
+        <Route path="games" element={<Games />} />
+        <Route path="games/:gameType" element={<GameArena />} />
+        <Route path="sudoku" element={<Sudoku />} />
+
       </Route>
 
       {/* --- ADMIN ROUTES --- */}

@@ -1,44 +1,4 @@
-import React, { useEffect, useState, useCallback, useContext, useRef } from 'react';
-import axios from 'axios';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../../context/AuthContext';
-
-const tabs = ['All', 'Photos', 'Videos', 'Rooms', 'Mess', 'Events'];
-
-const Gallery = () => {
-    const navigate = useNavigate();
-    const { user, token } = useContext(AuthContext);
-    const [media, setMedia] = useState([]);
-    const [activeFilter, setActiveFilter] = useState('All');
-    const [selectedId, setSelectedId] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [uploading, setUploading] = useState(false);
-    const fileInputRef = useRef(null);
-    const [newTitle, setNewTitle] = useState('');
-    const [newCategory, setNewCategory] = useState('Hostel');
-    const [customCategory, setCustomCategory] = useState('');
-    const [selectedFileName, setSelectedFileName] = useState('');
-    const [showUploadSection, setShowUploadSection] = useState(false);
-
-    const loadMedia = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const res = await axios.get('/api/gallery');
-            setMedia(res.data || []);
-        } catch (err) {
-            setError('Failed to load gallery');
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        loadMedia();
-    }, [loadMedia]);
-
+// This file is deprecated and can be safely deleted.
     const openFile = () => {
         if (!token) {
             navigate('/login', { state: { from: '/user/gallery' } });
@@ -61,7 +21,7 @@ const Gallery = () => {
         // Add auto format and quality parameters - but don't add to thumbnail URLs
         if (url.includes('/ik-thumbnail.jpg')) return url;
         const optimized = url.includes('?') ? `${url}&tr=f-auto,q-auto` : `${url}?tr=f-auto,q-auto`;
-        console.log('Video URL:', url, '-> Optimized:', optimized);
+        // Video URL optimized
         return optimized;
     };
 
@@ -71,7 +31,7 @@ const Gallery = () => {
         // Remove any existing query parameters before adding thumbnail endpoint
         const baseUrl = url.split('?')[0];
         const poster = baseUrl.endsWith('/') ? `${baseUrl}ik-thumbnail.jpg` : `${baseUrl}/ik-thumbnail.jpg`;
-        console.log('Poster URL:', poster);
+        // Poster URL generated
         return poster;
     };
 

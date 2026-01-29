@@ -36,10 +36,10 @@ const getGallery = async (req, res) => {
 // @route   POST /api/gallery/upload
 const uploadMedia = async (req, res) => {
   try {
-    console.log('Upload request received');
-    console.log('File:', req.file ? `${req.file.originalname} (${req.file.size} bytes)` : 'No file');
-    console.log('Body:', req.body);
-    console.log('User:', req.user?._id);
+    // Upload request received
+    // File info
+    // Body info
+    // User info
     
     if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
     
@@ -47,7 +47,7 @@ const uploadMedia = async (req, res) => {
     const file = req.file;
     const type = file.mimetype.startsWith('video') ? 'video' : 'image';
 
-    console.log('Uploading to ImageKit...');
+    // Uploading to ImageKit
     // Upload to ImageKit
     const uploadResponse = await imagekit.upload({
       file: file.buffer,
@@ -55,7 +55,7 @@ const uploadMedia = async (req, res) => {
       folder: '/hostel_gallery',
     });
 
-    console.log('ImageKit upload success:', uploadResponse.fileId);
+    // ImageKit upload success
 
     // Create DB record
     const doc = await Gallery.create({
@@ -68,11 +68,11 @@ const uploadMedia = async (req, res) => {
       uploadedBy: req.user._id,
     });
 
-    console.log('DB record created:', doc._id);
+    // DB record created
     res.status(201).json({ success: true, data: doc });
   } catch (error) {
-    console.error('Upload error:', error.message);
-    console.error('Stack:', error.stack);
+    // Upload error handled
+    // Stack trace handled
     res.status(500).json({ message: error.message || 'Upload failed', error: process.env.NODE_ENV === 'development' ? error.stack : undefined });
   }
 };

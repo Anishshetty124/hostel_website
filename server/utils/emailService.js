@@ -93,15 +93,13 @@ const sendPasswordResetOTP = async (toEmail, userName, otp) => {
     });
 
     if (error) {
-      console.error('Resend API Error:', error);
+      // Resend API Error handled
       throw new Error('Failed to send email');
     }
-
-    console.log('Email sent successfully:', data);
+    // Email sent successfully
     return { success: true, data };
-
   } catch (error) {
-    console.error('Email Service Error:', error);
+    // Email Service Error handled
     throw error;
   }
 };
@@ -161,15 +159,13 @@ const sendWelcomeEmail = async (toEmail, userName) => {
     });
 
     if (error) {
-      console.error('Resend API Error:', error);
+      // Resend API Error handled
       // Don't throw error for welcome emails - it shouldn't block registration
       return { success: false, error };
     }
-
     return { success: true, data };
-
   } catch (error) {
-    console.error('Welcome Email Error:', error);
+    // Welcome Email Error handled
     return { success: false, error };
   }
 };
@@ -214,13 +210,12 @@ const sendFeedbackEmail = async (toEmails, { subject, message, userName, userEma
     });
 
     if (error) {
-      console.error('Resend API Error:', error);
+      // Resend API Error handled
       throw new Error('Failed to send feedback email');
     }
-
     return { success: true, data };
   } catch (error) {
-    console.error('Feedback Email Error:', error);
+    // Feedback Email Error handled
     throw error;
   }
 };

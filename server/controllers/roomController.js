@@ -46,13 +46,12 @@ const deleteRoom = async (req, res) => {
     }
 };
 
-// --- CRITICAL FIX: EXPORT ALL FUNCTIONS HERE ---
+// --- Only export implemented controllers ---
 module.exports = {
     createRoom,
     getRooms,
     updateRoom,
     deleteRoom,
-    // Admin helper to view hostel records
     getHostelRecords: async (req, res) => {
         try {
             const records = await HostelRecord.find().sort({ roomNumber: 1 });

@@ -63,7 +63,7 @@ const Complaints = () => {
             // Ignore abort/cancel errors (axios uses 'CanceledError')
             if (err.name === 'AbortError' || err.name === 'CanceledError' || err.code === 'ERR_CANCELED') return;
             setError(err.response?.data?.message || 'Failed to load complaints');
-            console.error('Error fetching complaints:', err);
+            // Error fetching complaints handled
         } finally {
             setLoading(false);
         }
@@ -479,7 +479,7 @@ const ComplaintCard = React.memo(({ complaint, onComplaintUpdate, onComplaintDel
             // Update with server response (to get real _id and timestamps)
             onComplaintUpdate(res.data);
         } catch (err) {
-            console.error('Failed to send reply:', err);
+            // Failed to send reply handled
             // Revert optimistic update on error
             onComplaintUpdate(complaint);
             setError(err.response?.data?.message || 'Failed to send reply');
@@ -522,7 +522,7 @@ const ComplaintCard = React.memo(({ complaint, onComplaintUpdate, onComplaintDel
             onComplaintUpdate(res.data);
             setLongPressReplyId(null);
         } catch (err) {
-            console.error('Failed to delete reply:', err);
+            // Failed to delete reply handled
             setError(err.response?.data?.message || 'Failed to delete reply');
             setTimeout(() => setError(null), 3000);
         } finally {
@@ -542,7 +542,7 @@ const ComplaintCard = React.memo(({ complaint, onComplaintUpdate, onComplaintDel
             });
             onComplaintDelete?.(complaint._id);
         } catch (err) {
-            console.error('Failed to delete complaint:', err);
+            // Failed to delete complaint handled
             setError(err.response?.data?.message || 'Failed to delete complaint');
             setTimeout(() => setError(null), 3000);
         } finally {

@@ -28,19 +28,19 @@ const createComplaint = async (req, res) => {
 const getMyComplaints = async (req, res) => {
     try {
         if (!req.user) {
-            console.error('getMyComplaints: req.user is undefined');
+            // getMyComplaints: req.user is undefined
             return res.status(401).json({ message: 'User not authenticated' });
         }
         const userId = req.user._id || req.user.id;
         if (!userId) {
-            console.error('getMyComplaints: userId is undefined', { user: req.user });
+            // getMyComplaints: userId is undefined
             return res.status(400).json({ message: 'Invalid user ID' });
         }
         const complaints = await Complaint.find({ user: userId })
             .sort({ createdAt: -1 });
         res.json(complaints);
     } catch (error) {
-        console.error('getMyComplaints error:', error);
+        // getMyComplaints error handled
         res.status(500).json({ message: error.message });
     }
 };

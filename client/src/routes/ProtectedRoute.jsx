@@ -16,10 +16,11 @@ export const AdminRoute = () => {
     
     // Debug: Log user info
     if (user) {
-        console.log('AdminRoute Check:', { 
-            userRole: user.role, 
+        // AdminRoute Check
+        console.log({
+            userRole: user.role,
             isAdmin: user.role === 'admin',
-            fullUser: user 
+            fullUser: user
         });
     }
     
@@ -30,6 +31,6 @@ export const AdminRoute = () => {
         return <Outlet />;
     }
     
-    console.log('AdminRoute: User is not admin, redirecting to public dashboard');
+    // AdminRoute: User is not admin, redirecting to public dashboard
     return <Navigate to="/user/dashboard" />;
 };

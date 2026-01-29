@@ -39,7 +39,7 @@ const AdminComplaints = () => {
       // Ignore abort/cancel errors (axios uses 'CanceledError')
       if (err.name === 'AbortError' || err.name === 'CanceledError' || err.code === 'ERR_CANCELED') return;
       setError(err.response?.data?.message || 'Failed to load complaints');
-      console.error('Error fetching complaints:', err);
+      // Error fetching complaints handled
     } finally {
       setLoading(false);
     }
