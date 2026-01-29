@@ -26,9 +26,9 @@ const cards = [
         accent: 'from-purple-500 to-pink-500',
     },
     {
-        title: 'Residents',
-        desc: 'At a glance: residents and activity.',
-        to: '/admin/complaints',
+        title: 'Send Notice and Message',
+        desc: 'Send a public notice to all or a private message to any user.',
+        to: '/admin/send-notice',
         icon: Users,
         accent: 'from-amber-500 to-orange-500',
     },

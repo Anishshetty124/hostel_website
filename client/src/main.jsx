@@ -4,10 +4,11 @@ import './index.css'
 import App from './App.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
 
-// Unregister any service workers that might interfere with API calls
+
+// Register service worker for PWA
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(registrations => {
-    registrations.forEach(registration => registration.unregister());
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js');
   });
 }
 

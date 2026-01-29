@@ -6,6 +6,14 @@ const User = require("../models/User");
 const HostelRecord = require("../models/HostelRecord");
 
 // Import Email Service
+const getAllUsers = async (req, res) => {
+  try {
+    const users = await require('../models/User').find({}, 'firstName lastName email');
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch users' });
+  }
+};
 const { sendPasswordResetOTP, sendWelcomeEmail } = require("../utils/emailService");
 
 // --- 1. REGISTER ---
@@ -367,4 +375,5 @@ module.exports = {
   verifyResetCode,
   resetPassword,
   getRoomMembers,
+  getAllUsers,
 };

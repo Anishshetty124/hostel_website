@@ -13,6 +13,8 @@ const complaintRoutes = require('./routes/complaintRoutes');
 const galleryRoutes = require('./routes/galleryRoutes');
 const gameRoutes = require('./routes/gameRoutes');
 const feedbackRoutes = require('./routes/feedbackRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const pushRoutes = require('./routes/pushRoutes');
 
 const app = express();
 
@@ -40,6 +42,8 @@ app.use('/api/complaints', complaintRoutes);
 app.use('/api/gallery', galleryRoutes);
 app.use('/api/games', gameRoutes);
 app.use('/api/feedback', feedbackRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/push', pushRoutes);
 
 // --- Global Error Handler ---
 app.use((err, req, res, next) => {

@@ -1,0 +1,18 @@
+{
+  "short_name": "myHostel",
+  "name": "myHostel Hostel Management",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "orientation": "portrait-primary",
+  "description": "A modern hostel management app for students and admins.",
+  "scope": "/"
+}

@@ -55,6 +55,17 @@ export default function ConnectFour() {
 
   return (
     <div className="flex flex-col items-center w-full">
+      {/* Simple SVG Logo */}
+      <div className="mb-4">
+        <svg width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="30" cy="30" r="28" stroke="#2563eb" strokeWidth="4" fill="#f1f5f9" />
+          <circle cx="18" cy="22" r="7" fill="#f87171" stroke="#991b1b" strokeWidth="2" />
+          <circle cx="42" cy="22" r="7" fill="#fde047" stroke="#b45309" strokeWidth="2" />
+          <circle cx="18" cy="38" r="7" fill="#fde047" stroke="#b45309" strokeWidth="2" />
+          <circle cx="42" cy="38" r="7" fill="#f87171" stroke="#991b1b" strokeWidth="2" />
+          <text x="30" y="55" textAnchor="middle" fontSize="12" fill="#2563eb" fontWeight="bold">Connect Four</text>
+        </svg>
+      </div>
       <button
         className="mb-2 px-4 py-2 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 rounded text-xs font-semibold hover:bg-blue-200 dark:hover:bg-blue-800 transition self-end"
         onClick={() => setShowHowToPlay(true)}

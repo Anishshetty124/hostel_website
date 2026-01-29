@@ -4,7 +4,9 @@ import GameArena from './pages/user/GameArena';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthContext, AuthProvider } from './context/AuthContext';
 import { ProtectedRoute, AdminRoute } from './routes/ProtectedRoute';
-import { useContext } from 'react';
+import { useContext, useEffect } from 'react';
+import { subscribeUserToPush } from './utils/push';
+const PUBLIC_VAPID_KEY = 'BKk5EmsV8gS6MkGUE7hZf5DjKD6JsinOPfzVPH3xFK1WF9vNRcsLR5u1rTSzrMhgwIcstnloUHKMdD5rgZXX6D8';
 import LoadingSpinner from './components/LoadingSpinner';
 
 // Auth Pages
@@ -26,12 +28,14 @@ import Feedback from './pages/user/Feedback';
 import Complaints from './pages/user/Complaints';
 import Games from './pages/user/Games';
 import MemoryMatch from './pages/user/MemoryMatch';
+import Notifications from './pages/Notifications';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ManageRooms from './pages/admin/ManageRooms';
 import AdminComplaints from './pages/admin/AdminComplaints';
 import AdminFoodMenu from './pages/admin/AdminFoodMenu';
+import SendNotice from './pages/admin/SendNotice';
 
 // Smart Redirect Component - default to public user dashboard, admins still go to /admin
 const RootRedirect = () => {
@@ -75,6 +79,8 @@ const AppRoutes = () => {
       {/* --- USER ROUTES --- */}
       {/* Base Path: /user */}
       <Route path="/user" element={<UserLayout />}>
+          {/* Notifications route (global, not just user) */}
+          <Route path="notifications" element={<Notifications />} />
         {/* Redirect /user to /user/dashboard */}
         <Route index element={<Navigate to="/user/dashboard" replace />} />
         
@@ -107,6 +113,7 @@ const AppRoutes = () => {
           <Route path="complaints" element={<AdminComplaints />} />
           <Route path="rooms" element={<ManageRooms />} />
           <Route path="food-menu" element={<AdminFoodMenu />} />
+          <Route path="send-notice" element={<SendNotice />} />
         </Route>
       </Route>
 
@@ -115,6 +122,28 @@ const AppRoutes = () => {
 };
 
 function App() {
+  // Subscribe user to push notifications on login
+  const { user, token } = useContext(AuthContext) || {};
+  useEffect(() => {
+    async function subscribe() {
+      if (user && token) {
+        try {
+          const subscription = await subscribeUserToPush(PUBLIC_VAPID_KEY);
+          await fetch('/api/push/subscribe', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(subscription)
+          });
+        } catch (err) {
+          // Ignore if denied or not supported
+        }
+      }
+    }
+    subscribe();
+  }, [user, token]);
   return (
     <BrowserRouter>
       <AuthProvider>
