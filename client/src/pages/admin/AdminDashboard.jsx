@@ -19,9 +19,9 @@ const cards = [
         accent: 'from-emerald-500 to-teal-500',
     },
     {
-        title: 'Access Control',
-        desc: 'Ensure only admins can access privileged features.',
-        to: '/admin',
+        title: 'Change Food Menu',
+        desc: 'Temporarily or permanently update the mess timetable.',
+        to: '/admin/food-menu',
         icon: ShieldCheck,
         accent: 'from-purple-500 to-pink-500',
     },

@@ -2,11 +2,12 @@ import { useContext, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 
-
 const GAMES = [
     { id: 'tic-tac-toe', name: 'Tic-Tac-Toe', emoji: '⭕', available: true },
     { id: 'minesweeper', name: 'Minesweeper', emoji: '💣', available: true },
     { id: 'sudoku', name: 'Sudoku', emoji: '🧩', available: true },
+    { id: 'memory-match', name: 'Memory Match', emoji: '🃏', available: true },
+    { id: 'lights-out', name: 'Lights Out', emoji: '💡', available: true },
 ];
 
 const Games = () => {
@@ -58,11 +59,24 @@ const Games = () => {
             closeModal();
             return;
         }
+        if (gameId === 'memory-match') {
+            navigate(`/user/MemoryMatch`);
+            closeModal();
+            return;
+        }
+        if (gameId === 'lights-out') {
+            navigate(`/user/LightsOutGame`);
+            closeModal();
+            return;
+        }
     };
 
     return (
         <main className="p-1 sm:p-4 max-w-5xl mx-auto w-full min-h-screen bg-gradient-to-b from-gray-50 to-gray-200 dark:from-gray-900 dark:to-gray-800">
             <h1 className="text-xl xs:text-2xl sm:text-4xl font-extrabold mb-4 sm:mb-8 text-center text-gray-900 dark:text-gray-100 tracking-tight">🎮 Play Games</h1>
+
+
+
             <section className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 xs:gap-3 sm:gap-6 mb-6 sm:mb-10 w-full px-1 xs:px-0">
                 {GAMES.map(game => (
                     <button
@@ -86,6 +100,7 @@ const Games = () => {
                     </button>
                 ))}
             </section>
+
             {/* Game Lobby Modal */}
             {selectedGame && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-1 xs:p-2 sm:p-4 overflow-y-auto" role="presentation">
@@ -202,6 +217,24 @@ const Games = () => {
                     </div>
                 </div>
             )}
+
+            {/* Info Boxes at the bottom */}
+            <div className="flex flex-col sm:flex-row gap-4 mt-8 w-full justify-center">
+                <div className="flex-1 flex items-center justify-center bg-transparent text-gray-700 dark:text-gray-200 font-semibold text-base select-none cursor-default">
+                    Multiplayer games with hostellers is coming soon.
+                </div>
+                <a
+                    href="https://poki.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold shadow transition text-base text-center"
+                    style={{ textDecoration: 'none' }}
+                    role="button"
+                >
+                    Explore more games
+                </a>
+            </div>
+
         </main>
     );
 };

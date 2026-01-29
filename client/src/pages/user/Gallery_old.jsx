@@ -1,4 +1,40 @@
-// This file is deprecated and can be safely deleted.
+import React, { useState, useRef, useEffect } from 'react';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+
+const Gallery = () => {
+    const [media, setMedia] = useState([]);
+    const [activeFilter, setActiveFilter] = useState('All');
+    const [selectedFileName, setSelectedFileName] = useState('');
+    const [newTitle, setNewTitle] = useState('');
+    const [newCategory, setNewCategory] = useState('Hostel');
+    const [customCategory, setCustomCategory] = useState('');
+    const [selectedId, setSelectedId] = useState(null);
+    const [showUploadSection, setShowUploadSection] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [error, setError] = useState(null);
+    const [token, setToken] = useState(() => {
+        try {
+            const stored = localStorage.getItem('userInfo');
+            return stored ? JSON.parse(stored).token : null;
+        } catch {
+            return null;
+        }
+    });
+    const fileInputRef = useRef();
+    const navigate = useNavigate();
+
+    const loadMedia = async () => {
+        try {
+            const res = await axios.get('/api/gallery');
+            setMedia(res.data || []);
+        } catch (err) {
+            setError('Failed to load media');
+        }
+    };
+
+    useEffect(() => { loadMedia(); }, []);
+
     const openFile = () => {
         if (!token) {
             navigate('/login', { state: { from: '/user/gallery' } });
@@ -11,31 +47,24 @@
         const file = e.target.files?.[0];
         if (file) {
             setSelectedFileName(file.name);
-            // Don't auto-upload, wait for user to click Upload button
         }
     };
 
-    // Helper function to optimize video URLs for ImageKit
     const getOptimizedVideoUrl = (url) => {
         if (!url || !url.includes('imagekit.io')) return url;
-        // Add auto format and quality parameters - but don't add to thumbnail URLs
         if (url.includes('/ik-thumbnail.jpg')) return url;
         const optimized = url.includes('?') ? `${url}&tr=f-auto,q-auto` : `${url}?tr=f-auto,q-auto`;
-        // Video URL optimized
         return optimized;
     };
 
-    // Helper function to generate poster image from video
     const getPosterUrl = (url) => {
         if (!url || !url.includes('imagekit.io')) return '';
-        // Remove any existing query parameters before adding thumbnail endpoint
         const baseUrl = url.split('?')[0];
         const poster = baseUrl.endsWith('/') ? `${baseUrl}ik-thumbnail.jpg` : `${baseUrl}/ik-thumbnail.jpg`;
-        // Poster URL generated
         return poster;
     };
 
-const handleUploadClick = async () => {
+    const handleUploadClick = async () => {
         const file = fileInputRef.current?.files?.[0];
         if (!file) {
             setError('Please select a file first');
@@ -45,36 +74,28 @@ const handleUploadClick = async () => {
             setError('Please login to upload');
             return;
         }
-
-        // Check file size
-        const maxSize = 100 * 1024 * 1024; // 100MB
+        const maxSize = 100 * 1024 * 1024;
         if (file.size > maxSize) {
             setError(`File too large! Max size is 100 MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)} MB`);
             return;
         }
-
         setUploading(true);
         setError(null);
         try {
-            // Upload file directly to server (multer + ImageKit)
             const form = new FormData();
             form.append('file', file);
             form.append('title', newTitle || file.name);
             const categoryToUse = newCategory === 'Other' ? (customCategory || 'Hostel') : newCategory;
             form.append('category', categoryToUse);
-
             await axios.post('/api/gallery/upload', form, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
+                headers: { Authorization: `Bearer ${token}` }
             });
-
             setNewTitle('');
             setNewCategory('Hostel');
             setCustomCategory('');
             setSelectedFileName('');
             fileInputRef.current.value = '';
-            setSelectedId(null); // Close lightbox after upload
+            setSelectedId(null);
             await loadMedia();
         } catch (err) {
             setError(err.response?.data?.message || err.message || 'Upload failed');

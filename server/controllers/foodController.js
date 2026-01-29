@@ -1,31 +1,61 @@
+// Admin: Update food menu for a specific date (temporary) or all days (permanent)
+const TempFoodMenu = require('../models/TempFoodMenu');
+const adminUpdateMenu = async (req, res) => {
+    const { day, menu } = req.body;
+    try {
+        // Only update the selected day, using the new meals structure
+        if (!day) {
+            return res.status(400).json({ success: false, message: 'Missing day for permanent update' });
+        }
+        const updated = await FoodMenu.findOneAndUpdate(
+            { day },
+            {
+                $set: {
+                    meals: {
+                        breakfast: menu.breakfast,
+                        lunch: menu.lunch,
+                        snacks: menu.snacks,
+                        nightmeal: menu.nightmeal
+                    }
+                }
+            },
+            { new: true, upsert: true }
+        );
+        return res.status(200).json({ success: true, data: updated });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
 const FoodMenu = require('../models/FoodMenu');
 
 const getMenu = async (req, res) => {
     try {
-        // Sort in database using aggregation pipeline (much faster)
-        const menu = await FoodMenu.aggregate([
-            {
-                $addFields: {
-                    dayOrder: {
-                        $switch: {
-                            branches: [
-                                { case: { $eq: ["$day", "Monday"] }, then: 1 },
-                                { case: { $eq: ["$day", "Tuesday"] }, then: 2 },
-                                { case: { $eq: ["$day", "Wednesday"] }, then: 3 },
-                                { case: { $eq: ["$day", "Thursday"] }, then: 4 },
-                                { case: { $eq: ["$day", "Friday"] }, then: 5 },
-                                { case: { $eq: ["$day", "Saturday"] }, then: 6 },
-                                { case: { $eq: ["$day", "Sunday"] }, then: 7 }
-                            ],
-                            default: 8
-                        }
-                    }
-                }
-            },
-            { $sort: { dayOrder: 1 } },
-            { $project: { dayOrder: 0 } }
-        ]);
-        res.json(menu);
+        // Check for a temporary menu for today
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const todayStr = `${yyyy}-${mm}-${dd}`;
+
+        // Find all temp menus for today (for all days)
+        const tempMenus = await TempFoodMenu.find({ date: todayStr });
+        const tempMenusByDay = {};
+        tempMenus.forEach(tm => {
+            if (tm.menu && tm.day) tempMenusByDay[tm.day] = tm.menu;
+        });
+
+        // Get all permanent menus
+        const menuDocs = await FoodMenu.find();
+        const menu = menuDocs.map(doc => ({ day: doc.day, meals: doc.meals }));
+
+        // Merge: if a temp menu exists for a day, use it; else use permanent
+        const mergedMenu = menu.map(dayObj => {
+            if (tempMenusByDay[dayObj.day]) {
+                return { day: dayObj.day, meals: tempMenusByDay[dayObj.day] };
+            }
+            return dayObj;
+        });
+        res.json(mergedMenu);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -90,4 +120,5 @@ module.exports = {
     updateMenu,
     setDayMenu,
     getWeeklySchedule,
+    adminUpdateMenu,
 };

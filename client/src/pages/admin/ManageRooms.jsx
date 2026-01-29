@@ -192,15 +192,26 @@ const ManageRooms = () => {
             </div>
             <form onSubmit={handleAddMember} className="mb-6 bg-gray-50 dark:bg-gray-800 rounded-lg shadow p-4 flex flex-col sm:flex-row gap-3 items-center justify-between border border-gray-200 dark:border-gray-700">
                 <div className="flex flex-col sm:flex-row gap-2 w-full">
-                    <input
-                        name="roomNumber"
-                        type="text"
-                        className="w-full sm:w-32 px-2 py-1 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none"
-                        placeholder="Room Number"
-                        value={addData.roomNumber}
-                        onChange={handleAddChange}
-                        required
-                    />
+                                        <select
+                                                name="roomNumber"
+                                                className="w-full sm:w-32 px-2 py-1 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none"
+                                                value={addData.roomNumber}
+                                                onChange={handleAddChange}
+                                                required
+                                        >
+                                                <option value="">Room Number</option>
+                                                {[
+                                                    ...Array.from({length: 10}, (_, i) => i + 1),
+                                                    ...Array.from({length: 13}, (_, i) => 101 + i),
+                                                    ...Array.from({length: 13}, (_, i) => 201 + i),
+                                                    ...Array.from({length: 13}, (_, i) => 301 + i),
+                                                    ...Array.from({length: 13}, (_, i) => 401 + i),
+                                                    ...Array.from({length: 13}, (_, i) => 501 + i),
+                                                    ...Array.from({length: 13}, (_, i) => 601 + i)
+                                                ].map(num => (
+                                                    <option key={num} value={num}>{num}</option>
+                                                ))}
+                                        </select>
                     <input
                         name="fullName"
                         type="text"
@@ -299,7 +310,16 @@ const ManageRooms = () => {
                             <tr key={room._id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                                 <td className="p-2 sm:p-3 align-middle max-w-[120px] truncate">
                                     {editRoomId === room._id ? (
-                                        <input name="roomNumber" value={editData.roomNumber || ''} onChange={handleChange} className="border rounded px-2 py-1 w-full bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100" />
+                                                                                <select name="roomNumber" value={editData.roomNumber || ''} onChange={handleChange} className="border rounded px-2 py-1 w-full bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+                                                                                        <option value="">Room Number</option>
+                                                                                        {[
+                                                                                            ...Array.from({length: 10}, (_, i) => i + 1),
+                                                                                            ...Array.from({length: 13}, (_, i) => 101 + i),
+                                                                                            ...Array.from({length: 13}, (_, i) => 601 + i)
+                                                                                        ].map(num => (
+                                                                                            <option key={num} value={num}>{num}</option>
+                                                                                        ))}
+                                                                                </select>
                                     ) : (
                                         <span className="text-gray-900 dark:text-gray-100 break-all">{room.roomNumber}</span>
                                     )}

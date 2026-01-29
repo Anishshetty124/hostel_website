@@ -259,6 +259,19 @@ const AdminComplaints = () => {
                       )}
                     </div>
                   </div>
+                  {/* Delete button for resolved complaints */}
+                  {c.status === 'Resolved' && (
+                    <div className="w-full md:w-64">
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteComplaint(c._id)}
+                        className="w-full flex items-center justify-center gap-2 bg-rose-600 text-white rounded-lg px-3 py-2 text-sm font-semibold hover:bg-rose-700 mt-2"
+                        disabled={updatingId === c._id}
+                      >
+                        Delete Complaint
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))
@@ -267,6 +280,23 @@ const AdminComplaints = () => {
       </div>
     </div>
   );
+};
+
+// Delete complaint handler
+const handleDeleteComplaint = async (id) => {
+  if (!token) return;
+  if (!window.confirm('Are you sure you want to delete this complaint? This action cannot be undone.')) return;
+  setUpdatingId(id);
+  try {
+    await axios.delete(`/api/complaints/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setList((prev) => prev.filter((c) => c._id !== id));
+  } catch (err) {
+    setError(err.response?.data?.message || 'Failed to delete complaint');
+  } finally {
+    setUpdatingId(null);
+  }
 };
 
 // Simple time-ago helper

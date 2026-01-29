@@ -1,8 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useContext } from 'react';
+import axios from 'axios';
+import { AuthContext } from '../../context/AuthContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { TextSkeleton } from '../../components/SkeletonLoaders';
 
 const FoodMenu = () => {
+    const { token } = useContext(AuthContext);
     // Helper: parse time string and return end time in minutes from midnight
     const parseTime = (timeStr) => {
         const [start, end] = timeStr.split(' - ');
@@ -22,101 +25,93 @@ const FoodMenu = () => {
         return currentMinutes > endMinutes;
     };
 
-    const weeklyMenu = {
-        Monday: {
-            breakfast: { items: ["Shavige / Puliogare", "Veg Kurma", "Raitha", "Chutney", "Tea/Coffee/Milk"], time: "7:30 - 8:30 AM", color: "from-amber-50 to-orange-100" },
-            lunch: { items: ["Chapathi", "Beetroot Sukka", "Saothekai Sambar", "Dal", "Rasam", "White/Boiled Rice", "Buttermilk", "Papad", "Pickle"], time: "12:30 - 1:40 PM", color: "from-emerald-50 to-teal-100" },
-            snacks: { items: ["Samosa", "Tea/Coffee/Milk"], time: "4:30 - 5:30 PM", color: "from-blue-50 to-indigo-100" },
-            nightmeal: { items: ["Chapathi", "Omlet", "Southe Nugge Gassi"], time: "7:30 - 8:40 PM", color: "from-purple-50 to-fuchsia-100" }
-        },
-        Tuesday: {
-                breakfast: { items: ["Puri", "Sagu/Kurma", "Tea/Coffee/Milk"], time: "7:30 - 8:30 AM", color: "from-amber-50 to-orange-100" },
-                lunch: { items: ["Chapathi", "Alu Mutter Gassi", "Soppu Sambar", "Beans Pallya", "Rasam", "White/Boiled Rice", "Buttermilk", "Papad", "Pickle"], time: "12:30 - 1:40 PM", color: "from-emerald-50 to-teal-100" },
-                snacks: { items: ["Burger", "Tea/Coffee/Milk"], time: "4:30 - 5:30 PM", color: "from-blue-50 to-indigo-100" },
-                nightmeal: { items: ["Chapathi", "Chicken Kabab / Chicken Chilly"], time: "7:30 - 8:40 PM", color: "from-purple-50 to-fuchsia-100" }
-        },
-        Wednesday: {
-                breakfast: { items: ["Set Dosa", "Sambar", "Chutney", "Tomato Rice", "Tea/Coffee/Milk"], time: "7:30 - 8:30 AM", color: "from-amber-50 to-orange-100" },
-                lunch: { items: ["Chapathi", "Bende Gassi", "Mix Veg Sambar", "Thonde Kai Pallya", "Tomato Rasam", "White/Boiled Rice", "Buttermilk", "Papad", "Pickle"], time: "12:30 - 1:40 PM", color: "from-emerald-50 to-teal-100" },
-                snacks: { items: ["Veg Cutlet", "Tea/Coffee/Milk"], time: "4:30 - 5:30 PM", color: "from-blue-50 to-indigo-100" },
-                nightmeal: { items: ["Chapathi", "Egg Masala", "Bendi Masala", "Heerekai"], time: "7:30 - 8:40 PM", color: "from-purple-50 to-fuchsia-100" }
-        },
-        Thursday: {
-                breakfast: { items: ["Goli Vada", "Sambar", "Chutney", "Tea/Coffee/Milk"], time: "7:30 - 8:30 AM", color: "from-amber-50 to-orange-100" },
-                lunch: { items: ["Chapathi", "Kai Kudu Gassi", "Kumbla Kadi Sambar", "Bende Sukka Pallya", "Lemon Rasam", "White/Boiled Rice", "Buttermilk", "Papad", "Pickle"], time: "12:30 - 1:40 PM", color: "from-emerald-50 to-teal-100" },
-                snacks: { items: ["Ambade Vada", "Tea/Coffee/Milk"], time: "4:30 - 5:30 PM", color: "from-blue-50 to-indigo-100" },
-                nightmeal: { items: ["Chapathi", "Chicken Sukka / Chicken Munchi"], time: "7:30 - 8:40 PM", color: "from-purple-50 to-fuchsia-100" }
-        },
-        Friday: {
-                breakfast: { items: ["Neer Dosa", "Veg Pulav", "Raitha", "Chutney", "Tea/Coffee/Milk"], time: "7:30 - 8:30 AM", color: "from-amber-50 to-orange-100" },
-                lunch: { items: ["Chapathi", "Chana Masala", "Bende Nugge Sambar", "Suran Pallya", "Payasam", "White/Boiled Rice", "Buttermilk", "Papad", "Pickle"], time: "12:30 - 1:40 PM", color: "from-emerald-50 to-teal-100" },
-                snacks: { items: ["Upma (Small Rava)", "Tea/Coffee/Milk"], time: "4:30 - 5:30 PM", color: "from-blue-50 to-indigo-100" },
-                nightmeal: { items: ["Chapathi", "Kurma or Mix Sambar"], time: "7:30 - 8:40 PM", color: "from-purple-50 to-fuchsia-100" }
-        },
-        Saturday: {
-                breakfast: { items: ["Parotha", "Bisi Bele Bath", "Chutney", "Tea/Coffee/Milk"], time: "7:30 - 8:30 AM", color: "from-amber-50 to-orange-100" },
-                lunch: { items: ["Chapathi", "Bende Sambar", "Cabbage Pallya", "Chana Dal", "White/Boiled Rice", "Buttermilk", "Papad", "Pickle"], time: "12:30 - 1:40 PM", color: "from-emerald-50 to-teal-100" },
-                snacks: { items: ["Alu Bonda", "Tea/Coffee/Milk"], time: "4:30 - 5:30 PM", color: "from-blue-50 to-indigo-100" },
-                nightmeal: { items: ["Chapathi", "Omlet", "Alu Mutter", "Tomato Rasam/Dal"], time: "7:30 - 8:40 PM", color: "from-purple-50 to-fuchsia-100" }
-        },
-        Sunday: {
-                breakfast: { items: ["Masala Dosa", "Tea/Coffee/Milk"], time: "7:30 - 8:30 AM", color: "from-amber-50 to-orange-100" },
-                lunch: { items: ["White Rice", "Sambar", "Rasam", "Curd Rice", "Banana"], time: "12:30 - 1:40 PM", color: "from-emerald-50 to-teal-100" },
-                snacks: { items: ["Samosa", "Tea/Coffee/Milk"], time: "4:30 - 5:30 PM", color: "from-blue-50 to-indigo-100" },
-                nightmeal: { items: ["Biryani and Pulav", "Chicken Gravy", "Paneer Gravy"], time: "7:30 - 8:40 PM", color: "from-purple-50 to-fuchsia-100" }
-        }
-    };
+    // State for menu loading and error
+    const [weeklyMenu, setWeeklyMenu] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchMenu = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const headers = token ? { Authorization: `Bearer ${token}` } : {};
+                const res = await axios.get('/api/food', { headers });
+                const menuByDay = {};
+                (res.data || []).forEach(dayObj => {
+                    // Support both old and new formats
+                    if (dayObj.meals) {
+                        menuByDay[dayObj.day] = dayObj.meals;
+                    } else {
+                        menuByDay[dayObj.day] = {
+                            breakfast: dayObj.breakfast,
+                            lunch: dayObj.lunch,
+                            snacks: dayObj.snacks,
+                            nightmeal: dayObj.nightmeal
+                        };
+                    }
+                });
+                setWeeklyMenu(menuByDay);
+            } catch (err) {
+                setError('Failed to load menu.');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchMenu();
+    }, [token]);
 
     const currentDayName = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date());
-    
     const isToday = (day) => {
         const todayIndex = new Date().getDay();
         const dayIndex = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].indexOf(day);
         return todayIndex === dayIndex;
     };
-
-    const [activeDay, setActiveDay] = useState(weeklyMenu[currentDayName] ? currentDayName : "Monday");
-    
-    // Track manually toggled meals (not time-based)
+    const [activeDay, setActiveDay] = useState(currentDayName);
     const [manuallyToggled, setManuallyToggled] = useState(new Set());
-    
     const buildOpenState = (dayData, day) => {
         const base = Object.keys(dayData || {}).reduce((acc, key) => {
             acc[key] = true;
             return acc;
         }, {});
-        // Auto-close meals whose time has passed for today
         if (isToday(day)) {
             Object.entries(dayData || {}).forEach(([mealKey, mealData]) => {
-                if (isPastMealTime(mealData.time)) {
+                if (mealData && mealData.time && isPastMealTime(mealData.time)) {
                     base[mealKey] = false;
                 }
             });
         }
         return base;
     };
-    const [openMeals, setOpenMeals] = useState(buildOpenState(weeklyMenu[currentDayName], currentDayName));
-
-    // Order days so that today's day appears first
+    const [openMeals, setOpenMeals] = useState({});
     const days = useMemo(() => {
         const allDays = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
         const todayIndex = new Date().getDay();
         return [...allDays.slice(todayIndex), ...allDays.slice(0, todayIndex)];
     }, []);
-
     useEffect(() => {
-        setOpenMeals(buildOpenState(weeklyMenu[activeDay], activeDay));
-        setManuallyToggled(new Set());
-    }, [activeDay]);
-
+        if (weeklyMenu && weeklyMenu[activeDay]) {
+            setOpenMeals(buildOpenState(weeklyMenu[activeDay], activeDay));
+            setManuallyToggled(new Set());
+        }
+    }, [activeDay, weeklyMenu]);
     useEffect(() => {
-        // Update UI every minute to reflect time-based changes
+        if (!weeklyMenu || !weeklyMenu[activeDay]) return;
         const id = setInterval(() => {
             setOpenMeals(buildOpenState(weeklyMenu[activeDay], activeDay));
         }, 60_000);
         return () => clearInterval(id);
-    }, [activeDay]);
+    }, [activeDay, weeklyMenu]);
 
+    if (loading) {
+        return <div className="flex justify-center items-center min-h-screen"><LoadingSpinner /></div>;
+    }
+    if (error) {
+        return <div className="flex justify-center items-center min-h-screen text-red-600 font-bold">{error}</div>;
+    }
+    if (!weeklyMenu) {
+        return <div className="flex justify-center items-center min-h-screen text-gray-500">No menu data available.</div>;
+    }
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-gray-900 font-sans text-slate-900 dark:text-gray-100 pb-10">
             {/* 1. RESPONSIVE HEADER */}
@@ -162,10 +157,11 @@ const FoodMenu = () => {
                 {/* 2. DYNAMIC GRID FOR MEAL CARDS */}
                 {/* 1 col on mobile, 2 on tablet, 4 on desktop */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
-                    {Object.entries(weeklyMenu[activeDay]).map(([meal, data]) => {
+                    {weeklyMenu[activeDay] && Object.entries(weeklyMenu[activeDay]).map(([meal, data]) => {
+                        // Always render the card, even if data is missing
                         const isOpen = openMeals[meal] ?? true;
                         const isManuallyToggled = manuallyToggled.has(meal);
-                        const isTimeClosedForToday = isToday(activeDay) && isPastMealTime(data.time);
+                        const isTimeClosedForToday = isToday(activeDay) && data && data.time && isPastMealTime(data.time);
                         const shouldShowClosed = isTimeClosedForToday && !isManuallyToggled && !isOpen;
 
                         const handleToggle = () => {
@@ -183,8 +179,8 @@ const FoodMenu = () => {
 
                         return (
                         <div key={meal} className="group relative bg-white dark:bg-gray-800 rounded-[2rem] md:rounded-[2.5rem] p-1 shadow-xl shadow-gray-300/60 dark:shadow-black/10 transition-all duration-500">
-                            <div className={`h-full rounded-[1.8rem] md:rounded-[2.3rem] p-6 md:p-8 bg-gradient-to-br ${data.color} dark:from-gray-800 dark:to-gray-700 border border-gray-300 dark:border-gray-700`}>
- 
+                            <div className={`h-full rounded-[1.8rem] md:rounded-[2.3rem] p-6 md:p-8 bg-gradient-to-br ${(data && data.color) || ''} dark:from-gray-800 dark:to-gray-700 border border-gray-300 dark:border-gray-700`}>
+
                                 <div className="flex justify-between items-center mb-6 md:mb-8">
                                     <div className="p-2 md:p-3 bg-white dark:bg-gray-900 rounded-xl md:rounded-2xl shadow-sm border border-white/60 dark:border-gray-700/60">
                                         <svg className="w-5 h-5 md:w-6 md:h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -192,7 +188,7 @@ const FoodMenu = () => {
                                         </svg>
                                     </div>
                                     <span className="text-xs md:text-sm font-bold uppercase text-indigo-700 dark:text-indigo-300 tracking-wide bg-white/60 dark:bg-gray-900/50 px-3 py-1.5 rounded-full border border-white dark:border-gray-700 backdrop-blur-sm font-mono">
-                                        {data.time}
+                                        {(data && data.time) || ''}
                                     </span>
                                     <button
                                         onClick={handleToggle}
@@ -203,17 +199,21 @@ const FoodMenu = () => {
                                 </div>
 
                                 <h3 className="text-2xl md:text-3xl font-black capitalize text-slate-800 dark:text-gray-100 mb-4 md:mb-6 tracking-tight">{meal}</h3>
-                
+
                                 {isOpen ? (
                                     <div className="space-y-3 md:space-y-4">
-                                        {data.items.map((item, i) => (
-                                            <div key={i} className="flex items-center gap-3">
-                                                <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-white/80 dark:bg-gray-900/70 flex items-center justify-center shadow-sm text-xs md:text-sm font-bold text-slate-500 dark:text-gray-300 flex-shrink-0">
-                                                    0{i + 1}
+                                        {(data && Array.isArray(data.items) && data.items.length > 0) ? (
+                                            data.items.map((item, i) => (
+                                                <div key={i} className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-white/80 dark:bg-gray-900/70 flex items-center justify-center shadow-sm text-xs md:text-sm font-bold text-slate-500 dark:text-gray-300 flex-shrink-0">
+                                                        0{i + 1}
+                                                    </div>
+                                                    <span className="font-bold text-base md:text-lg text-slate-700 dark:text-gray-200 leading-tight">{item}</span>
                                                 </div>
-                                                <span className="font-bold text-base md:text-lg text-slate-700 dark:text-gray-200 leading-tight">{item}</span>
-                                            </div>
-                                        ))}
+                                            ))
+                                        ) : (
+                                            <div className="text-sm font-semibold text-slate-600 dark:text-gray-300 opacity-80">No items available</div>
+                                        )}
                                     </div>
                                 ) : shouldShowClosed ? (
                                     <div className="text-sm font-semibold text-slate-600 dark:text-gray-300 opacity-80">Closed</div>
@@ -251,12 +251,15 @@ const FoodMenu = () => {
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 flex-grow">
-                                    {Object.entries(weeklyMenu[day]).map(([meal, data]) => (
-                                        <div key={meal} className="border-l-2 border-slate-100 dark:border-gray-700 pl-4 py-1">
-                                            <span className="text-[10px] md:text-xs font-black text-slate-400 dark:text-gray-400 uppercase tracking-widest">{meal}</span>
-                                            <p className="font-bold text-slate-700 dark:text-gray-300 text-sm md:text-base mt-1 line-clamp-1">{data.items.join(" • ")}</p>
-                                        </div>
-                                    ))}
+                                    {weeklyMenu[day] && Object.entries(weeklyMenu[day]).map(([meal, data]) => {
+                                        if (!data || !Array.isArray(data.items)) return null;
+                                        return (
+                                            <div key={meal} className="border-l-2 border-slate-100 dark:border-gray-700 pl-4 py-1">
+                                                <span className="text-[10px] md:text-xs font-black text-slate-400 dark:text-gray-400 uppercase tracking-widest">{meal}</span>
+                                                <p className="font-bold text-slate-700 dark:text-gray-300 text-sm md:text-base mt-1 line-clamp-1">{data.items.join(" • ")}</p>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
 
                                 <button 

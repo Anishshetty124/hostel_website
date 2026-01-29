@@ -1,3 +1,4 @@
+import LightsOutGame from './pages/user/LightsOutGame';
 import Sudoku from './pages/user/Sudoku';
 import GameArena from './pages/user/GameArena';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
@@ -24,13 +25,13 @@ import Gallery from './pages/user/Gallery';
 import Feedback from './pages/user/Feedback';
 import Complaints from './pages/user/Complaints';
 import Games from './pages/user/Games';
-import SnakeGame from './pages/user/SnakeGame';
-import WhackAMole from './pages/user/WhackAMole';
+import MemoryMatch from './pages/user/MemoryMatch';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ManageRooms from './pages/admin/ManageRooms';
 import AdminComplaints from './pages/admin/AdminComplaints';
+import AdminFoodMenu from './pages/admin/AdminFoodMenu';
 
 // Smart Redirect Component - default to public user dashboard, admins still go to /admin
 const RootRedirect = () => {
@@ -88,9 +89,14 @@ const AppRoutes = () => {
         <Route path="laundry" element={<Feedback />} />
         <Route path="complaints" element={<Complaints />} />
 
+
         <Route path="games" element={<Games />} />
         <Route path="games/:gameType" element={<GameArena />} />
         <Route path="sudoku" element={<Sudoku />} />
+        <Route path="MemoryMatch" element={<MemoryMatch />} />
+        <Route path="LightsOutGame" element={<LightsOutGame />} />
+
+
 
       </Route>
 
@@ -100,6 +106,7 @@ const AppRoutes = () => {
           <Route index element={<AdminDashboard />} />
           <Route path="complaints" element={<AdminComplaints />} />
           <Route path="rooms" element={<ManageRooms />} />
+          <Route path="food-menu" element={<AdminFoodMenu />} />
         </Route>
       </Route>
 

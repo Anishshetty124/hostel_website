@@ -18,23 +18,36 @@ router.delete('/hostelrecords/:id', protect, admin, async (req, res) => {
 // POST: Add a new member (create HostelRecord, enforce max 4 per room and valid room)
 router.post('/hostelrecords', protect, admin, async (req, res) => {
     try {
-        const { roomNumber, fullName, firstName } = req.body;
+        let { roomNumber, fullName, firstName } = req.body;
         if (!roomNumber || !fullName) {
             return res.status(400).json({ message: 'Room number and full name are required.' });
         }
-        // Only allow adding to an existing valid room
-        const allRooms = await HostelRecord.distinct('roomNumber');
-        const validRoomNumbers = allRooms.filter(rn => rn && rn.trim()).map(rn => rn.trim());
-        const newRoomNumber = roomNumber.trim();
-        if (!validRoomNumbers.includes(newRoomNumber)) {
-            return res.status(400).json({ message: 'Invalid room number. You can only add to an existing valid room.' });
+        // Ensure roomNumber is a string
+        roomNumber = String(roomNumber).trim();
+        // Only allow adding to allowed admin ranges
+        function isAllowedRoomNumber(room) {
+            const n = parseInt(room, 10);
+            if (isNaN(n)) return false;
+            if ((n >= 1 && n <= 10) ||
+                (n >= 101 && n <= 113) ||
+                (n >= 201 && n <= 213) ||
+                (n >= 301 && n <= 313) ||
+                (n >= 401 && n <= 413) ||
+                (n >= 501 && n <= 513) ||
+                (n >= 601 && n <= 613)) {
+                return true;
+            }
+            return false;
+        }
+        if (!isAllowedRoomNumber(roomNumber)) {
+            return res.status(400).json({ message: 'Invalid room number. Admin can only add to rooms 1-10, 101-113, 201-213, 301-313, 401-413, 501-513, 601-613.' });
         }
         // Enforce max 4 members per room
-        const memberCount = await HostelRecord.countDocuments({ roomNumber: newRoomNumber });
+        const memberCount = await HostelRecord.countDocuments({ roomNumber });
         if (memberCount >= 4) {
-            return res.status(400).json({ message: 'This room already has 4 members. Cannot add more.' });
+            return res.status(400).json({ message: 'This room already has 4 members. You cannot add more than 4 members to a room.' });
         }
-        const newMember = new HostelRecord({ roomNumber: newRoomNumber, fullName, firstName });
+        const newMember = new HostelRecord({ roomNumber, fullName, firstName });
         await newMember.save();
         res.status(201).json(newMember);
     } catch (err) {
@@ -90,13 +103,26 @@ router.put('/hostelrecords/:id', protect, admin, async (req, res) => {
         const original = await HostelRecord.findById(req.params.id);
         if (!original) return res.status(404).json({ message: 'HostelRecord not found' });
 
-        // Only allow changing to an existing valid room number (from the set of all roomNumbers)
-        const allRooms = await HostelRecord.distinct('roomNumber');
-        const validRoomNumbers = allRooms.filter(rn => rn && rn.trim()).map(rn => rn.trim());
+        // Only allow changing to a valid room number in the allowed admin range
         const newRoomNumber = req.body.roomNumber && req.body.roomNumber.trim();
+        function isAllowedRoomNumber(room) {
+            // Allowed ranges: 1-10, 101-113, 201-213, 301-313, 401-413, 501-513, 601-613
+            const n = parseInt(room, 10);
+            if (isNaN(n)) return false;
+            if ((n >= 1 && n <= 10) ||
+                (n >= 101 && n <= 113) ||
+                (n >= 201 && n <= 213) ||
+                (n >= 301 && n <= 313) ||
+                (n >= 401 && n <= 413) ||
+                (n >= 501 && n <= 513) ||
+                (n >= 601 && n <= 613)) {
+                return true;
+            }
+            return false;
+        }
         if (newRoomNumber && newRoomNumber !== original.roomNumber) {
-            if (!validRoomNumbers.includes(newRoomNumber)) {
-                return res.status(400).json({ message: 'Invalid room number. You can only move to an existing valid room.' });
+            if (!isAllowedRoomNumber(newRoomNumber)) {
+                return res.status(400).json({ message: 'Invalid room number. Admin can only move to rooms 1-10, 101-113, 201-213, 301-313, 401-413, 501-513, 601-613.' });
             }
             // Enforce max 4 members per room
             const memberCount = await HostelRecord.countDocuments({ roomNumber: newRoomNumber });

@@ -53,6 +53,7 @@ function isValid(board, row, col, val) {
 
 
 export default function Sudoku() {
+  const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [searchParams] = useSearchParams();
   const difficulty = searchParams.get('difficulty') || 'medium';
   const initialBoard = BOARDS[difficulty] || BOARDS.medium;
@@ -107,7 +108,22 @@ export default function Sudoku() {
 
   return (
     <div className="flex flex-col items-center w-full px-1 xs:px-2 sm:px-0">
+      <button
+        className="mb-4 px-4 py-2 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 rounded text-xs font-semibold hover:bg-blue-200 dark:hover:bg-blue-800 transition self-end"
+        onClick={() => setShowHowToPlay(true)}
+      >
+        How to Play
+      </button>
       <div className="w-full flex items-center justify-between mb-1 xs:mb-2">
+              {showHowToPlay && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-1 xs:p-2 sm:p-4 overflow-y-auto" role="presentation">
+                  <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-4 w-full max-w-xs xs:max-w-sm sm:max-w-md focus:outline-none" tabIndex={-1}>
+                    <h2 className="text-lg font-bold mb-2 text-gray-900 dark:text-gray-100">How to Play</h2>
+                    <div className="mb-4 text-gray-700 dark:text-gray-200 text-sm">Sudoku: Fill the grid so every row, column, and 3x3 box contains 1-9 with no repeats.</div>
+                    <button onClick={() => setShowHowToPlay(false)} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium">Close</button>
+                  </div>
+                </div>
+              )}
         <button
           onClick={handleBack}
           className="px-2 xs:px-3 py-1 rounded bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 text-xs xs:text-sm font-medium transition"

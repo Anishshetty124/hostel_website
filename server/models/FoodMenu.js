@@ -12,10 +12,12 @@ const mealSchema = new mongoose.Schema(
 const foodMenuSchema = new mongoose.Schema(
 	{
 		day: { type: String, required: true, unique: true },
-		breakfast: { type: mealSchema, default: () => ({ items: [] }) },
-		lunch: { type: mealSchema, default: () => ({ items: [] }) },
-		snacks: { type: mealSchema, default: () => ({ items: [] }) },
-		nightmeal: { type: mealSchema, default: () => ({ items: [] }) },
+		meals: {
+			breakfast: { type: mealSchema, default: () => ({ items: [] }) },
+			lunch: { type: mealSchema, default: () => ({ items: [] }) },
+			snacks: { type: mealSchema, default: () => ({ items: [] }) },
+			nightmeal: { type: mealSchema, default: () => ({ items: [] }) }
+		},
 		dayOrder: { type: Number, default: 8 },
 	},
 	{ timestamps: true }
