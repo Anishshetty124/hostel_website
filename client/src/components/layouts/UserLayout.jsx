@@ -23,10 +23,10 @@ const UserLayout = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-white via-slate-50 to-white dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex flex-col font-sans text-gray-900 dark:text-gray-100 transition-colors duration-300">
+        <div className="min-h-screen bg-gradient-to-br from-white via-slate-50 to-white dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex flex-col font-sans text-gray-900 dark:text-gray-100">
             
             {/* --- PREMIUM GLASS NAVBAR --- */}
-            <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+            <nav className={`fixed top-0 left-0 right-0 z-50 ${
                 scrolled 
                     ? 'bg-indigo-50/90 dark:bg-gray-900/90 backdrop-blur-xl shadow-lg border-b border-indigo-200/60 dark:border-gray-700/50' 
                     : 'bg-indigo-50/70 dark:bg-gray-900/70 backdrop-blur-md border-b border-indigo-200/40 dark:border-gray-700/30'
@@ -45,7 +45,7 @@ const UserLayout = () => {
                     <div className="flex items-center gap-2 sm:gap-4">
                         {/* Notifications Icon: Only show if logged in */}
                         {user && (
-                          <Link to="/user/notifications" className="relative group p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300" title="Notifications">
+                          <Link to="/user/notifications" className="relative group p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700" title="Notifications">
                               <svg className="w-5 h-5 text-indigo-600 group-hover:text-indigo-800 dark:text-indigo-400 dark:group-hover:text-indigo-200 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                               </svg>
@@ -54,7 +54,7 @@ const UserLayout = () => {
                         {/* Theme Toggle */}
                         <button
                             onClick={toggleTheme}
-                            className="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 group relative overflow-hidden"
+                            className="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 group relative overflow-hidden"
                             aria-label="Toggle theme"
                         >
                             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -95,7 +95,7 @@ const UserLayout = () => {
                                 
                                 <button 
                                     onClick={handleLogout} 
-                                    className="group p-2.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-300 relative overflow-hidden"
+                                    className="group p-2.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 relative overflow-hidden"
                                     title="Logout"
                                 >
                                     <div className="absolute inset-0 bg-gradient-to-r from-red-500/20 to-pink-500/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>

@@ -3,3 +3,12 @@
 /* Redirect all requests to index.html except static assets */
 
 /*    /index.html   200 */
+/*
+	Netlify SPA fallback for all routes
+	This ensures /user/dashboard and all client routes work on refresh
+*/
+/*
+	/user/*    /index.html   200
+	/admin/*   /index.html   200
+	/*         /index.html   200
+*/

@@ -230,7 +230,7 @@ const Gallery = () => {
     );
 
     return (
-        <div className="max-w-7xl mx-auto p-3 sm:p-4 md:p-8 min-h-screen">
+        <div className="max-w-7xl mx-auto p-1 xs:p-2 sm:p-4 md:p-8 min-h-screen">
             {/* Header */}
             <header className="text-center mb-8">
                 <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-gray-100 mb-2">Hostel Life Gallery</h1>
@@ -409,7 +409,7 @@ const Gallery = () => {
                                 </h2>
                                 {/* Removed header Show More; moved to 4th tile overlay */}
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-4 md:gap-6">
                                 <AnimatePresence>
                                     {photos
                                         .slice(0, activeFilter === 'All' ? PREVIEW_ITEMS : displayedPhotos)
@@ -523,7 +523,7 @@ const Gallery = () => {
                                     {activeFilter}
                                 </h2>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-4 md:gap-6">
                                 <AnimatePresence>
                                     {all
                                         .filter(item => (item.type === 'image') || !!item.imageUrl)
@@ -691,17 +691,17 @@ const Gallery = () => {
                         {selectedId && (
                             <motion.div
                                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 backdrop-blur-xl overflow-hidden"
+                                className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-1 sm:p-4 backdrop-blur-xl overflow-y-auto"
                                 onClick={() => setSelectedId(null)}
                             >
                                 <motion.div
                                     initial={{ scale: 0.9 }} animate={{ scale: 1 }}
-                                    className="max-w-4xl w-full h-full max-h-[90vh] flex items-center justify-center relative"
+                                    className="w-full max-w-xs xs:max-w-sm sm:max-w-lg md:max-w-2xl lg:max-w-4xl h-auto max-h-[90vh] flex items-center justify-center relative"
                                     onClick={(e) => e.stopPropagation()}
                                 >
-                                    <button className="absolute -top-12 right-0 text-white text-5xl font-thin hover:rotate-90 transition-transform" onClick={() => setSelectedId(null)}>&times;</button>
+                                    <button className="absolute top-2 right-2 text-white text-3xl sm:text-5xl font-thin hover:rotate-90 transition-transform bg-black/40 rounded-full px-2 py-0.5 sm:px-3 sm:py-1" onClick={() => setSelectedId(null)}>&times;</button>
                                     {selectedMedia?.type === 'image' || selectedMedia?.imageUrl ? (
-                                        <img src={selectedMedia?.mediaUrl || selectedMedia?.imageUrl} className="max-h-full rounded-2xl shadow-2xl" alt="" />
+                                        <img src={selectedMedia?.mediaUrl || selectedMedia?.imageUrl} className="max-h-[70vh] w-auto max-w-full rounded-2xl shadow-2xl object-contain" alt="" />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center bg-black rounded-3xl overflow-hidden border border-white/10">
                                             <video 
@@ -709,7 +709,7 @@ const Gallery = () => {
                                                 poster={getPosterUrl(selectedMedia?.mediaUrl)}
                                                 controls 
                                                 loading="lazy"
-                                                className="w-full h-full object-contain" 
+                                                className="w-full h-auto max-h-[70vh] object-contain" 
                                             />
                                         </div>
                                     )}
