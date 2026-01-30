@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "node-cron": "^4.2.1",
-    "web-push": "^3.6.7"
+    "node-cron": "^4.2.1"
   }
 }

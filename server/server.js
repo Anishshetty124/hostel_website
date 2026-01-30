@@ -55,7 +55,9 @@ app.use(cors({
 // Default to local DB if env variable is missing for dev
 const dbURI = process.env.MONGO_URI || 'mongodb://localhost:27017/hostel_db';
 mongoose.connect(dbURI)
-    .then(() => console.log('✅ MongoDB Connected'))
+    .then(() => {
+        console.log('✅ MongoDB Connected');
+    })
     .catch(err => console.error('❌ DB Connection Error:', err));
 
 // --- Routes Usage ---

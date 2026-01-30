@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import api from "../utils/api";
 import Logo from "../assets/logo.svg";
 
 const ForgotPassword = () => {
@@ -21,11 +22,14 @@ const ForgotPassword = () => {
       setStatus({ loading: false, error: null, success: response.data.message });
       setStep(2);
     } catch (error) {
+      const errMsg = error.response?.data?.message || "Failed to send reset code";
       setStatus({ 
         loading: false, 
-        error: error.response?.data?.message || "Failed to send reset code", 
+        error: errMsg, 
         success: null 
       });
+      // Log error to browser console
+      console.error("[ForgotPassword] Error sending reset code:", error, errMsg);
     }
   };
 
@@ -40,11 +44,14 @@ const ForgotPassword = () => {
       setStatus({ loading: false, error: null, success: response.data.message });
       setStep(3);
     } catch (error) {
+      const errMsg = error.response?.data?.message || "Invalid or expired code";
       setStatus({ 
         loading: false, 
-        error: error.response?.data?.message || "Invalid or expired code", 
+        error: errMsg, 
         success: null 
       });
+      // Log error to browser console
+      console.error("[ForgotPassword] Error verifying code:", error, errMsg);
     }
   };
 
@@ -52,6 +59,7 @@ const ForgotPassword = () => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
       setStatus({ loading: false, error: "Passwords do not match", success: null });
+      console.error("[ForgotPassword] Passwords do not match");
       return;
     }
 
@@ -62,6 +70,7 @@ const ForgotPassword = () => {
         error: "Password must be at least 6 characters, contain 1 capital letter and 1 special character", 
         success: null 
       });
+      console.error("[ForgotPassword] Password does not meet requirements");
       return;
     }
 
@@ -77,11 +86,14 @@ const ForgotPassword = () => {
         window.location.href = "/login";
       }, 2000);
     } catch (error) {
+      const errMsg = error.response?.data?.message || "Failed to reset password";
       setStatus({ 
         loading: false, 
-        error: error.response?.data?.message || "Failed to reset password", 
+        error: errMsg, 
         success: null 
       });
+      // Log error to browser console
+      console.error("[ForgotPassword] Error resetting password:", error, errMsg);
     }
   };
 

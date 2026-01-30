@@ -2,10 +2,8 @@ const mongoose = require('mongoose');
 
 const hostelRecordSchema = new mongoose.Schema({
   roomNumber: {
-    type: String,
-    required: true,
-    unique: true, // Ensures one record per room
-    trim: true
+    type: Number, // Changed from String to Number
+    required: true
   },
   fullName: {
     type: String,
@@ -26,4 +24,5 @@ hostelRecordSchema.index({ firstName: 1 });
 // --- THE CRITICAL FIX ---
 // Do NOT use: export const HostelRecord = ...
 // Do NOT use: exports.HostelRecord = ...
-module.exports = mongoose.model('HostelRecord', hostelRecordSchema);
+// Explicitly point to the lowercase plural collection
+module.exports = mongoose.model('HostelRecord', hostelRecordSchema, 'hostelrecords');

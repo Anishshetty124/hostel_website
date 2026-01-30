@@ -1,3 +1,23 @@
+// --- Helper: Derive first name from a full name while stripping honorifics ---
+const getFirstNameFromFullName = (fullName) => {
+  const HONORIFICS = [
+    'dr.', 'dr', 'mr.', 'mr', 'mrs.', 'mrs', 'ms.', 'ms', 'prof.', 'prof', 'sir', 'madam', 'shri', 'smt'
+  ];
+  if (!fullName || typeof fullName !== 'string') return '';
+  let s = fullName.trim();
+  // Normalize spaces and dots
+  s = s.replace(/\s+/g, ' ').trim();
+  const parts = s.split(' ');
+  // Drop leading honorific tokens
+  while (parts.length && HONORIFICS.includes(parts[0].toLowerCase())) {
+    parts.shift();
+  }
+  // First remaining token is the first name
+  const first = (parts[0] || '').trim();
+  // If first token still ends with a dot (e.g., 'Dr.'), strip it
+  return first.replace(/\.$/, '');
+};
+
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
@@ -19,25 +39,6 @@ const { sendPasswordResetOTP, sendWelcomeEmail } = require("../utils/emailServic
 // --- 1. REGISTER ---
 const register = async (req, res) => {
   try {
-    // Helper to derive first name from a full name while stripping honorifics
-    const getFirstNameFromFullName = (fullName) => {
-      const HONORIFICS = [
-        'dr.', 'dr', 'mr.', 'mr', 'mrs.', 'mrs', 'ms.', 'ms', 'prof.', 'prof', 'sir', 'madam', 'shri', 'smt'
-      ];
-      if (!fullName || typeof fullName !== 'string') return '';
-      let s = fullName.trim();
-      // Normalize spaces and dots
-      s = s.replace(/\s+/g, ' ').trim();
-      const parts = s.split(' ');
-      // Drop leading honorific tokens
-      while (parts.length && HONORIFICS.includes(parts[0].toLowerCase())) {
-        parts.shift();
-      }
-      // First remaining token is the first name
-      const first = (parts[0] || '').trim();
-      // If first token still ends with a dot (e.g., 'Dr.'), strip it
-      return first.replace(/\.$/, '');
-    };
     const { firstName, lastName, email, password, roomNumber } = req.body;
 
     // Basic Validation (make lastName optional)
@@ -319,50 +320,48 @@ const resetPassword = async (req, res) => {
   }
 };
 
-// --- 7. GET ROOM MEMBERS (for name checking during login/register issues) ---
+// --- 7. GET ROOM MEMBERS (simple version: fetch all members for a room number) ---
 const getRoomMembers = async (req, res) => {
-  try {
-    const roomNumber = (req.query.roomNumber || req.params.roomNumber || "").trim();
-
-    if (!roomNumber) {
-      return res.status(400).json({ message: "Room number is required." });
-    }
-
-    // Fetch ALL hostel records for the room (some rooms have multiple occupants)
-    const records = await HostelRecord.find({ roomNumber });
-    if (!records || records.length === 0) {
-      return res.status(404).json({ message: "No hostel record found for this room." });
-    }
-
-    const namesSet = new Set();
-
-    for (const rec of records) {
-      // Prefer explicit firstName field if present
-      if (rec.firstName && rec.firstName.trim()) {
-        namesSet.add(rec.firstName.trim());
-      } else if (rec.fullName && rec.fullName.trim()) {
-        // Derive first name from fullName, ignoring honorifics
-        const chunks = String(rec.fullName)
-          .split(/[\n,;|]+/)
-          .map((s) => s.trim())
-          .filter(Boolean);
-        for (const chunk of chunks) {
-          const first = getFirstNameFromFullName(chunk);
-          if (first) namesSet.add(first);
-        }
+    // --- DEBUG: Show collection and sample document ---
+    try {
+      const { roomNumber } = req.query;
+      // 1. Handle missing input
+      if (!roomNumber) {
+        return res.status(200).json([]);
       }
+      // 2. Convert string "402" to Number 402
+      const queryNumber = parseInt(roomNumber, 10);
+      // 3. Search the DB using the Number type
+      const members = await HostelRecord.find({ roomNumber: queryNumber });
+      // 4. Log the success
+      console.log(`[getRoomMembers] Success! Room: ${queryNumber} | Members Found: ${members.length}`);
+      // 5. Always return 200 with the array
+      return res.status(200).json(members);
+    } catch (error) {
+      console.error('Fetch Error:', error);
+      res.status(500).json({ message: 'Server error' });
     }
-
-    const members = Array.from(namesSet).sort((a, b) => a.localeCompare(b)).map((firstName) => ({ firstName }));
-
-    return res.status(200).json({
-      roomNumber,
-      count: members.length,
-      members,
+  try {
+    const { roomNumber } = req.query;
+    if (!roomNumber || !roomNumber.trim()) {
+      console.error('[getRoomMembers] Error: Room number is required. Request:', req.method, req.originalUrl, req.query);
+      return res.status(400).json({ message: 'Room number is required.' });
+    }
+    const roomQuery = parseInt(roomNumber);
+    console.log(`[getRoomMembers] Searching for room:`, roomQuery, `(Type: ${typeof roomQuery}) | Also trying string: '${roomNumber}'`);
+    const members = await HostelRecord.find({
+      $or: [
+        { roomNumber: roomNumber },
+        { roomNumber: roomQuery },
+        { roomNumber: String(roomNumber) }
+      ]
     });
+    console.log('[getRoomMembers] Query result:', members);
+    // Always return 200 with array, never 404
+    return res.status(200).json(members);
   } catch (error) {
-    console.error("Get Room Members Error:", error);
-    res.status(500).json({ message: "Internal server error." });
+    console.error('[getRoomMembers] Server error:', error, '\nStack:', error.stack, '\nRequest:', req.method, req.originalUrl, req.query);
+    res.status(500).json({ message: 'Server error', error: error.message, stack: error.stack, request: { method: req.method, url: req.originalUrl, query: req.query } });
   }
 };
 

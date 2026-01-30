@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../utils/api";
 import Logo from "../assets/logo.svg";
 import { FormInputSkeleton } from "../components/SkeletonLoaders";
 
@@ -63,6 +63,7 @@ const Register = () => {
     } catch (err) {
       const errorMessage = err.response?.data?.message || "Registration failed.";
       setStatus({ loading: false, error: errorMessage });
+      console.error("[Register] Registration error:", err, errorMessage);
     }
   };
 
@@ -86,13 +87,20 @@ const Register = () => {
     setRoomMembers([]);
     try {
       const res = await api.get(`/api/auth/room-members`, { params: { roomNumber: query } });
-      const members = res.data?.members || [];
+      // Support both array and object response
+      let members = [];
+      if (Array.isArray(res.data)) {
+        members = res.data;
+      } else if (res.data && Array.isArray(res.data.members)) {
+        members = res.data.members;
+      }
       roomCacheRef.current[key] = members;
       setRoomMembers(members);
       setRoomStatus({ loading: false, error: null });
     } catch (error) {
       const msg = error.response?.data?.message || "Could not fetch room members";
       setRoomStatus({ loading: false, error: msg });
+      console.error('[Register] Room member fetch error:', error, msg);
     }
   };
 

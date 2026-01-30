@@ -59,9 +59,11 @@ const Login = () => {
         }
       } else {
         setStatus({ loading: false, error: result.message || "Login failed" });
+        console.error('[Login] Login error:', result.message || "Login failed");
       }
     } catch (error) {
       setStatus({ loading: false, error: "Login failed" });
+      console.error('[Login] Login error:', error);
     }
   };
 
@@ -91,6 +93,7 @@ const Login = () => {
     } catch (error) {
       const msg = error.response?.data?.message || "Could not fetch room members";
       setRoomStatus({ loading: false, error: msg });
+      console.error('[Login] Room member fetch error:', error, msg);
     }
   };
 
