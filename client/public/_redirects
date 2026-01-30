@@ -1,0 +1,5 @@
+/* Netlify _redirects file for SPA fallback */
+/* Handles client-side routing for React/Vite apps */
+/* Redirect all requests to index.html except static assets */
+
+/*    /index.html   200 */

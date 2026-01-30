@@ -37,7 +37,9 @@ import AdminComplaints from './pages/admin/AdminComplaints';
 import AdminFoodMenu from './pages/admin/AdminFoodMenu';
 import SendNotice from './pages/admin/SendNotice';
 
-// Smart Redirect Component - default to public user dashboard, admins still go to /admin
+
+// Use logo192.png for notifications and PWA
+const LOGO_URL = '/logo192.png';
 const RootRedirect = () => {
   const { user, loading } = useContext(AuthContext);
   

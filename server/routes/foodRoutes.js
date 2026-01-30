@@ -4,7 +4,7 @@ const { getMenu, updateMenu, getWeeklySchedule, setDayMenu, adminUpdateMenu } = 
 const { protect, admin } = require('../middleware/authMiddleware');
 
 
-router.get('/', protect, getMenu);
+router.get('/', getMenu);
 router.post('/', protect, admin, updateMenu);
 router.get('/schedule', protect, getWeeklySchedule);
 router.post('/day', protect, admin, setDayMenu);

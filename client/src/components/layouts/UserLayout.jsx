@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
-import Logo from '../../assets/logo.svg';
+import Logo from '/logo192.png';
 import { AuthContext } from '../../context/AuthContext';
 
 const UserLayout = () => {

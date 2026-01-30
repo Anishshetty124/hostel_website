@@ -27,4 +27,9 @@ export default defineConfig({
   optimizeDeps: {
     include: ['react', 'react-router-dom', 'axios', 'lucide-react'],
   },
-})
+  // Netlify/SPA fallback for client-side routing
+  preview: {
+    // This ensures 404s fallback to index.html for SPA
+    fallback: true,
+  },
+});
