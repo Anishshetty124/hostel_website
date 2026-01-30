@@ -45,7 +45,7 @@ const Profile = () => {
       }
       
       // 1. Send Update to Backend - use relative URL for correct API endpoint
-      const res = await axios.put("/api/auth/update-email", 
+      const res = await api.put("/api/auth/update-email", 
         { email: formData.email }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );

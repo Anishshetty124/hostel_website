@@ -36,6 +36,11 @@ const userSchema = new mongoose.Schema({
     resetPasswordExpiry: {
         type: Date
     },
+    creativeNotifications: {
+        type: Boolean,
+        default: true
+    },
+
     createdAt: {
         type: Date,
         default: Date.now

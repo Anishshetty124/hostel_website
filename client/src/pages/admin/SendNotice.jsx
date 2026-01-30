@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import api from '../../utils/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 const SendNotice = () => {
@@ -17,7 +17,7 @@ const SendNotice = () => {
   useEffect(() => {
     if (type === 'private') {
       const token = localStorage.getItem('token');
-      axios.get('/api/auth/users/all', token ? { headers: { Authorization: `Bearer ${token}` } } : undefined)
+      api.get('/api/auth/users/all', token ? { headers: { Authorization: `Bearer ${token}` } } : undefined)
         .then(res => setAllUsers(res.data || []))
         .catch(() => setAllUsers([]));
     }
@@ -45,7 +45,7 @@ const SendNotice = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      await axios.post(
+      await api.post(
         '/api/notifications/send',
         { type, recipient, title, message },
         token ? { headers: { Authorization: `Bearer ${token}` } } : undefined

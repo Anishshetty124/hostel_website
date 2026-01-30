@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useContext, useRef, useCallback } from 'react';
-import axios from 'axios';
+import api from '../../utils/api';
 import {
     Plus, Search, Wrench, Zap,
     Trash2, Coffee, Clock, X,
@@ -53,7 +53,7 @@ const Complaints = () => {
                 setLoading(false);
                 return;
             }
-            const res = await axios.get('/api/complaints', {
+            const res = await api.get('/api/complaints', {
                 headers: { Authorization: `Bearer ${token}` },
                 signal: abortControllerRef.current.signal
             });
@@ -90,7 +90,7 @@ const Complaints = () => {
         setSubmitting(true);
         setError(null);
         try {
-            const res = await axios.post('/api/complaints', formData, {
+            const res = await api.post('/api/complaints', formData, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             const newList = [res.data, ...complaints];
@@ -473,7 +473,7 @@ const ComplaintCard = React.memo(({ complaint, onComplaintUpdate, onComplaintDel
 
         // Send to server
         try {
-            const res = await axios.post(`/api/complaints/${complaint._id}/user-reply`, { message: optimisticReply.message }, {
+            const res = await api.post(`/api/complaints/${complaint._id}/user-reply`, { message: optimisticReply.message }, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             // Update with server response (to get real _id and timestamps)
@@ -516,7 +516,7 @@ const ComplaintCard = React.memo(({ complaint, onComplaintUpdate, onComplaintDel
         setDeleting(true);
 
         try {
-            const res = await axios.delete(`/api/complaints/${complaint._id}/reply/${replyId}`, {
+            const res = await api.delete(`/api/complaints/${complaint._id}/reply/${replyId}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             onComplaintUpdate(res.data);
@@ -537,7 +537,7 @@ const ComplaintCard = React.memo(({ complaint, onComplaintUpdate, onComplaintDel
 
         setDeletingComplaint(true);
         try {
-            await axios.delete(`/api/complaints/${complaint._id}`, {
+            await api.delete(`/api/complaints/${complaint._id}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             onComplaintDelete?.(complaint._id);

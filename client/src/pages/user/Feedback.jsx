@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import axios from 'axios';
+import api from '../../utils/api';
 import { AuthContext } from '../../context/AuthContext';
 
 const Feedback = () => {
@@ -24,7 +24,7 @@ const Feedback = () => {
         }
         setLoading(true);
         try {
-            await axios.post('/api/feedback', { subject: subject.trim(), message: message.trim() }, {
+            await api.post('/api/feedback', { subject: subject.trim(), message: message.trim() }, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             setSuccess('Thanks! Your feedback has been sent.');

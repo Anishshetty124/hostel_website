@@ -14,7 +14,10 @@ const galleryRoutes = require('./routes/galleryRoutes');
 const gameRoutes = require('./routes/gameRoutes');
 const feedbackRoutes = require('./routes/feedbackRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+
+const creativeNotificationRoutes = require('./routes/creativeNotificationRoutes');
 const pushRoutes = require('./routes/pushRoutes');
+const creativeNotificationSettings = require('./routes/creativeNotificationSettings');
 
 // Start notification cron jobs (creative food/game notifications)
 require('./utils/notificationCron');
@@ -26,7 +29,25 @@ app.use(express.json()); // Allow JSON data
 app.use(helmet());       // Security headers
 app.use(compression());  // Gzip compression for speed
 app.use(cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173', // Allow Frontend
+    origin: function (origin, callback) {
+        // Allow multiple origins from env, plus localhost for dev
+        const envOrigins = process.env.CLIENT_URL
+            ? process.env.CLIENT_URL.split(',').map(o => o.trim())
+            : [];
+        const allowedOrigins = [
+            ...envOrigins,
+            'http://localhost:5173',
+            'http://localhost:3000'
+        ];
+        // Allow requests with no origin (like mobile apps, curl, etc.)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        } else {
+            console.warn('Blocked by CORS:', origin);
+            return callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true
 }));
 
@@ -46,6 +67,8 @@ app.use('/api/gallery', galleryRoutes);
 app.use('/api/games', gameRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/notifications', creativeNotificationRoutes);
+app.use('/api/user', creativeNotificationSettings);
 app.use('/api/push', pushRoutes);
 
 // --- Global Error Handler ---

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useContext, useRef } from 'react';
-import axios from 'axios';
+import api from '../../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
@@ -35,7 +35,7 @@ const Gallery = () => {
         setLoading(true);
         setError(null);
         try {
-            const res = await axios.get('/api/gallery');
+            const res = await api.get('/api/gallery');
             setMedia(res.data || []);
         } catch (err) {
             setError('Failed to load gallery');
@@ -136,7 +136,7 @@ const Gallery = () => {
             const categoryToUse = newCategory === 'Other' ? (customCategory || 'Hostel') : newCategory;
             form.append('category', categoryToUse);
 
-            await axios.post('/api/gallery/upload', form, {
+            await api.post('/api/gallery/upload', form, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -175,7 +175,7 @@ const Gallery = () => {
         setError(null);
         setSuccess(null);
         try {
-            await axios.delete(`/api/gallery/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+            await api.delete(`/api/gallery/${id}`, { headers: { Authorization: `Bearer ${token}` } });
             setSuccess('Deleted successfully');
             setTimeout(() => setSuccess(null), 2000);
             await loadMedia();

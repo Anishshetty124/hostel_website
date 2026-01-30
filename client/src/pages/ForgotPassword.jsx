@@ -17,7 +17,7 @@ const ForgotPassword = () => {
     e.preventDefault();
     setStatus({ loading: true, error: null, success: null });
     try {
-      const response = await axios.post("/api/auth/forgot-password", { email });
+      const response = await api.post("/api/auth/forgot-password", { email });
       setStatus({ loading: false, error: null, success: response.data.message });
       setStep(2);
     } catch (error) {
@@ -33,7 +33,7 @@ const ForgotPassword = () => {
     e.preventDefault();
     setStatus({ loading: true, error: null, success: null });
     try {
-      const response = await axios.post("/api/auth/verify-reset-code", { 
+      const response = await api.post("/api/auth/verify-reset-code", { 
         email, 
         code: resetCode 
       });
@@ -67,7 +67,7 @@ const ForgotPassword = () => {
 
     setStatus({ loading: true, error: null, success: null });
     try {
-      const response = await axios.post("/api/auth/reset-password", { 
+      const response = await api.post("/api/auth/reset-password", { 
         email, 
         code: resetCode, 
         newPassword 

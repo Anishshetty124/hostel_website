@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
-import axios from 'axios';
+import api from '../../utils/api';
 
 const GameRoom = () => {
     const { roomId } = useParams();
@@ -16,7 +16,7 @@ const GameRoom = () => {
         const fetchGameRoom = async () => {
             try {
                 setLoading(true);
-                const response = await axios.get(
+                const response = await api.get(
                     `/api/games/room/${roomId}`,
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
@@ -51,7 +51,7 @@ const GameRoom = () => {
             setCountdownSeconds(5);
             // Refresh room data
             const fetchInterval = setInterval(() => {
-                axios.get(
+                api.get(
                     `/api/games/room/${roomId}`,
                     { headers: { Authorization: `Bearer ${token}` } }
                 ).then(res => {

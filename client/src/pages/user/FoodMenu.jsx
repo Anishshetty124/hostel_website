@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useContext } from 'react';
-import axios from 'axios';
+import api from '../../utils/api';
 import { AuthContext } from '../../context/AuthContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { TextSkeleton } from '../../components/SkeletonLoaders';
@@ -36,7 +36,7 @@ const FoodMenu = () => {
             setError(null);
             try {
                 const headers = token ? { Authorization: `Bearer ${token}` } : {};
-                const res = await axios.get('/api/food', { headers });
+                const res = await api.get('/api/food', { headers });
                 const menuByDay = {};
                 (res.data || []).forEach(dayObj => {
                     // Support both old and new formats

@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext } from 'react';
-import axios from 'axios';
+import api from '../../utils/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { AuthContext } from '../../context/AuthContext';
 
@@ -22,7 +22,7 @@ const AdminFoodMenu = () => {
       setLoading(true);
       try {
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await axios.get('/api/food', { headers });
+        const res = await api.get('/api/food', { headers });
         // Convert array to object by day, using nested meals structure
         const weekObj = {};
         (res.data || []).forEach(dayMenu => {
@@ -79,7 +79,7 @@ const AdminFoodMenu = () => {
     setSubmitting(true);
     try {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      await axios.post('/api/food/admin/update', {
+      await api.post('/api/food/admin/update', {
         permanent: true,
         day: selectedDay,
         menu: menuData[selectedDay],

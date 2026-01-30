@@ -1,5 +1,5 @@
 import { useEffect, useState, useContext } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 import { AuthContext } from '../context/AuthContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 
@@ -13,7 +13,7 @@ const Notifications = () => {
     setRemovingId(id);
     try {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      await axios.delete(`/api/notifications/${id}`, { headers });
+      await api.delete(`/api/notifications/${id}`, { headers });
       setNotifications(notifications => notifications.filter(n => n._id !== id));
     } catch (err) {
       // Optionally show error
@@ -28,7 +28,7 @@ const Notifications = () => {
       setError(null);
       try {
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await axios.get('/api/notifications', { headers });
+        const res = await api.get('/api/notifications', { headers });
         setNotifications(res.data || []);
       } catch (err) {
         setError('Failed to load notifications');

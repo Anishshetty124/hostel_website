@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 
 // 1. Create the Context (The "Brain")
 // This is the specific export your error says is missing!
@@ -37,7 +37,7 @@ export const AuthProvider = ({ children }) => {
     // Accepts identifier (email or first name) per backend API
     const login = async (identifier, password) => {
         try {
-            const { data } = await axios.post('/api/auth/login', { identifier, password });
+            const { data } = await api.post('/api/auth/login', { identifier, password });
             
             // Save login data
             localStorage.setItem('token', data.token);

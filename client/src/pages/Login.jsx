@@ -83,7 +83,7 @@ const Login = () => {
     setRoomStatus({ loading: true, error: null });
     setRoomMembers([]);
     try {
-      const res = await axios.get(`/api/auth/room-members`, { params: { roomNumber: roomQuery.trim() } });
+      const res = await api.get(`/api/auth/room-members`, { params: { roomNumber: roomQuery.trim() } });
       const members = res.data?.members || [];
       roomCacheRef.current[key] = members;
       setRoomMembers(members);

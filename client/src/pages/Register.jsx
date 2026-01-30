@@ -50,7 +50,7 @@ const Register = () => {
     setStatus({ loading: true, error: null });
 
     try {
-      await axios.post("/api/auth/register", formData);
+      await api.post("/api/auth/register", formData);
       // Reset form after successful registration
       setFormData({
         firstName: "",
@@ -85,7 +85,7 @@ const Register = () => {
     setRoomStatus({ loading: true, error: null });
     setRoomMembers([]);
     try {
-      const res = await axios.get(`/api/auth/room-members`, { params: { roomNumber: query } });
+      const res = await api.get(`/api/auth/room-members`, { params: { roomNumber: query } });
       const members = res.data?.members || [];
       roomCacheRef.current[key] = members;
       setRoomMembers(members);

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../utils/api';
 import { useNavigate } from 'react-router-dom';
 
 const Gallery = () => {
@@ -26,7 +26,7 @@ const Gallery = () => {
 
     const loadMedia = async () => {
         try {
-            const res = await axios.get('/api/gallery');
+            const res = await api.get('/api/gallery');
             setMedia(res.data || []);
         } catch (err) {
             setError('Failed to load media');
@@ -87,7 +87,7 @@ const Gallery = () => {
             form.append('title', newTitle || file.name);
             const categoryToUse = newCategory === 'Other' ? (customCategory || 'Hostel') : newCategory;
             form.append('category', categoryToUse);
-            await axios.post('/api/gallery/upload', form, {
+            await api.post('/api/gallery/upload', form, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setNewTitle('');
@@ -110,7 +110,7 @@ const Gallery = () => {
             return;
         }
         try {
-            await axios.delete(`/api/gallery/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+            await api.delete(`/api/gallery/${id}`, { headers: { Authorization: `Bearer ${token}` } });
             await loadMedia();
         } catch (err) {
             setError(err.response?.data?.message || 'Delete failed');

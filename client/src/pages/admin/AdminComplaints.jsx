@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import axios from 'axios';
+import api from '../../utils/api';
 import { AuthContext } from '../../context/AuthContext';
 import { Search, CheckCircle2, AlertCircle, Clock, MessageCircle, Send, X } from 'lucide-react';
 import { ComplaintCardSkeleton, StatsCardsSkeleton } from '../../components/SkeletonLoaders';
@@ -30,7 +30,7 @@ const AdminComplaints = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get('/api/complaints/admin/all', {
+      const res = await api.get('/api/complaints/admin/all', {
         headers: { Authorization: `Bearer ${token}` },
         signal: abortControllerRef.current.signal
       });
@@ -76,7 +76,7 @@ const AdminComplaints = () => {
     if (!token) return;
     setUpdatingId(id);
     try {
-      const res = await axios.patch(`/api/complaints/${id}/status`, { status }, {
+      const res = await api.patch(`/api/complaints/${id}/status`, { status }, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setList((prev) => prev.map((c) => (c._id === id ? res.data : c)));
@@ -91,7 +91,7 @@ const AdminComplaints = () => {
     if (!token || !replyText.trim()) return;
     setUpdatingId(id);
     try {
-      const res = await axios.post(`/api/complaints/${id}/reply`, { message: replyText.trim() }, {
+      const res = await api.post(`/api/complaints/${id}/reply`, { message: replyText.trim() }, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setList((prev) => prev.map((c) => (c._id === id ? res.data : c)));
@@ -288,7 +288,7 @@ const handleDeleteComplaint = async (id) => {
   if (!window.confirm('Are you sure you want to delete this complaint? This action cannot be undone.')) return;
   setUpdatingId(id);
   try {
-    await axios.delete(`/api/complaints/${id}`, {
+    await api.delete(`/api/complaints/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     setList((prev) => prev.filter((c) => c._id !== id));
