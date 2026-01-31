@@ -7,6 +7,22 @@ import { ComplaintCardSkeleton, StatsCardsSkeleton } from '../../components/Skel
 const statusOptions = ['Pending', 'In Progress', 'Resolved'];
 
 const AdminComplaints = () => {
+    // Delete complaint handler
+    const handleDeleteComplaint = async (id) => {
+      if (!token) return;
+      if (!window.confirm('Are you sure you want to delete this complaint? This action cannot be undone.')) return;
+      setUpdatingId(id);
+      try {
+        await api.delete(`/api/complaints/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setList((prev) => prev.filter((c) => c._id !== id));
+      } catch (err) {
+        setError(err.response?.data?.message || 'Failed to delete complaint');
+      } finally {
+        setUpdatingId(null);
+      }
+    };
   const { token } = useContext(AuthContext);
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -279,22 +295,8 @@ const AdminComplaints = () => {
   );
 };
 
-// Delete complaint handler
-const handleDeleteComplaint = async (id) => {
-  if (!token) return;
-  if (!window.confirm('Are you sure you want to delete this complaint? This action cannot be undone.')) return;
-  setUpdatingId(id);
-  try {
-    await api.delete(`/api/complaints/${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    setList((prev) => prev.filter((c) => c._id !== id));
-  } catch (err) {
-    setError(err.response?.data?.message || 'Failed to delete complaint');
-  } finally {
-    setUpdatingId(null);
-  }
-};
+
+
 
 // Simple time-ago helper
 const timeAgo = (date) => {
