@@ -39,7 +39,7 @@ const UserDashboard = () => {
     },
     {
       title: "Games",
-      desc: "TT, Badminton & more",
+      desc: "Tic-Tac-Toe, sudoku & more",
       path: "/user/games",
       accentGradient: "from-pink-400 to-rose-500",
       badge: "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-200",
@@ -49,7 +49,7 @@ const UserDashboard = () => {
     },
     {
       title: "Complaints",
-      desc: "Raise issues",
+      desc: "complaint your issues to warden/admin",
       path: "/user/complaints",
       accentGradient: "from-red-400 to-orange-500",
       badge: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200",

@@ -173,14 +173,18 @@ const Register = () => {
               value={formData.roomNumber} 
               onChange={handleChange} 
             />
-            <div className="-mt-2 mb-2">
-              <button
-                type="button"
-                onClick={() => { setRoomQuery(formData.roomNumber || roomQuery); setRoomSearched(false); setShowRoomLookup(true); }}
-                className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium underline decoration-dotted"
-              >
-                Check room members
-              </button>
+
+            <div className="mb-4">
+              <div className="flex flex-col gap-1">
+                <span className="text-xs text-gray-700 dark:text-gray-300 font-medium">Check your name in hostel record</span>
+                <button
+                  type="button"
+                  onClick={() => { setRoomQuery(formData.roomNumber || roomQuery); setRoomSearched(false); setShowRoomLookup(true); }}
+                  className="block w-full text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium underline decoration-dotted text-left"
+                >
+                  Check room members
+                </button>
+              </div>
             </div>
 
             <InputField 
@@ -224,9 +228,9 @@ const Register = () => {
           </form>
 
           {showRoomLookup && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-0 sm:p-4" onClick={() => { setShowRoomLookup(false); setRoomSearched(false); }}>
-              <div className="w-full sm:max-w-md bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-xl shadow-xl mb-12 sm:mb-0 max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/40 p-0 sm:p-4" onClick={() => { setShowRoomLookup(false); setRoomSearched(false); }}>
+              <div className="w-full sm:max-w-md bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-xl shadow-xl mt-0 sm:mb-0 max-h-[80vh] overflow-y-auto" style={{marginTop: 'env(safe-area-inset-top,0)'}} onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800" style={{ position: 'sticky', top: 0, zIndex: 60 }}>
                   <h3 className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">Names in hostel records</h3>
                   <button type="button" aria-label="Close" onClick={() => { setShowRoomLookup(false); setRoomSearched(false); }} className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
@@ -242,6 +246,7 @@ const Register = () => {
                       onChange={(e) => setRoomQuery(e.target.value)}
                       placeholder="Enter room number"
                       className="flex-1 bg-white dark:bg-gray-900/50 border-2 border-indigo-200 dark:border-indigo-800/50 rounded-lg px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400"
+                      style={{ position: 'sticky', top: 48, zIndex: 59 }}
                     />
                     <button type="button" onClick={fetchRoomMembers} disabled={roomStatus.loading} className={`px-4 py-2 rounded-lg text-white text-sm font-semibold ${roomStatus.loading ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}`}>Lookup</button>
                   </div>
