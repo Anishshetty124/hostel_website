@@ -20,9 +20,6 @@ const hostelRecordSchema = new mongoose.Schema({
 // Add index for faster verification queries
 hostelRecordSchema.index({ roomNumber: 1 });
 hostelRecordSchema.index({ firstName: 1 });
-
+ 
 // --- THE CRITICAL FIX ---
-// Do NOT use: export const HostelRecord = ...
-// Do NOT use: exports.HostelRecord = ...
-// Explicitly point to the lowercase plural collection
 module.exports = mongoose.model('HostelRecord', hostelRecordSchema, 'hostelrecords');
