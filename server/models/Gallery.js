@@ -13,7 +13,8 @@ const gallerySchema = new mongoose.Schema({
 
     provider: { type: String, enum: ['imagekit', 'legacy', 'custom'], default: 'imagekit' },
     fileId: { type: String },
-    uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+    uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    hash: { type: String, index: true }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Gallery', gallerySchema);

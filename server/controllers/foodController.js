@@ -115,8 +115,67 @@ const getWeeklySchedule = async (req, res) => {
     }
 };
 
+
+// Fetch only today's menu
+const getTodayMenu = async (req, res) => {
+    try {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const todayStr = `${yyyy}-${mm}-${dd}`;
+
+        // Try to find a temp menu for today for any day
+        const tempMenus = await TempFoodMenu.find({ date: todayStr });
+        const tempMenusByDay = {};
+        tempMenus.forEach(tm => {
+            if (tm.menu && tm.day) tempMenusByDay[tm.day] = tm.menu;
+        });
+
+        // Get permanent menu for today
+        const dayName = today.toLocaleDateString('en-US', { weekday: 'long' });
+        const doc = await FoodMenu.findOne({ day: dayName });
+        let menu = doc ? { day: doc.day, meals: doc.meals } : null;
+        // If temp menu exists for today, use it
+        if (tempMenusByDay[dayName]) {
+            menu = { day: dayName, meals: tempMenusByDay[dayName] };
+        }
+        res.json(menu);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Fetch menu for a specific day (e.g., /api/food/Monday)
+const getDayMenu = async (req, res) => {
+    try {
+        const { day } = req.params;
+        if (!day) return res.status(400).json({ message: 'Day is required' });
+        // Try to find a temp menu for today for this day
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const todayStr = `${yyyy}-${mm}-${dd}`;
+        const tempMenu = await TempFoodMenu.findOne({ date: todayStr, day });
+        if (tempMenu && tempMenu.menu) {
+            return res.json({ day, meals: tempMenu.menu });
+        }
+        // Fallback to permanent menu
+        const doc = await FoodMenu.findOne({ day });
+        if (doc) {
+            return res.json({ day: doc.day, meals: doc.meals });
+        }
+        res.status(404).json({ message: 'Menu not found for this day' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
     getMenu,
+    getTodayMenu,
+    getDayMenu,
     updateMenu,
     setDayMenu,
     getWeeklySchedule,

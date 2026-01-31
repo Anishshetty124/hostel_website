@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { toast } from 'react-hot-toast';
 import { Link, useNavigate } from "react-router-dom";
 import api from "../utils/api";
 import Logo from "../assets/logo.svg";
@@ -63,6 +64,7 @@ const Register = () => {
     } catch (err) {
       const errorMessage = err.response?.data?.message || "Registration failed.";
       setStatus({ loading: false, error: errorMessage });
+      toast.error("Registration failed. Please check your name in the hostel record. It may be different from your real name.");
       console.error("[Register] Registration error:", err, errorMessage);
     }
   };
@@ -222,7 +224,7 @@ const Register = () => {
           </form>
 
           {showRoomLookup && (
-            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-0 sm:p-4" onClick={() => { setShowRoomLookup(false); setRoomSearched(false); }}>
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-0 sm:p-4" onClick={() => { setShowRoomLookup(false); setRoomSearched(false); }}>
               <div className="w-full sm:max-w-md bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-xl shadow-xl mb-12 sm:mb-0 max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
                   <h3 className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">Names in hostel records</h3>

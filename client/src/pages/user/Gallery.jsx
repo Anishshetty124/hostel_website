@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, useContext, useRef } from 'react';
+import { hashFile } from '../../utils/fileHash';
 import api from '../../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -30,23 +31,41 @@ const Gallery = () => {
     const [selectedFileName, setSelectedFileName] = useState('');
     const [showUploadSection, setShowUploadSection] = useState(false);
     const [displayedPhotos, setDisplayedPhotos] = useState(ITEMS_PER_PAGE); // Pagination for photos
+    const [selectedFiles, setSelectedFiles] = useState([]); // Multiple file selection
+    const [selectedFileHashes, setSelectedFileHashes] = useState([]); // Hashes for deduplication
 
-    const loadMedia = useCallback(async () => {
-        setLoading(true);
+    // Pagination state for lazy loading
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+    const [mediaLoading, setMediaLoading] = useState(false);
+
+    const loadMedia = useCallback(async (reset = false) => {
+        setLoading(reset);
+        setMediaLoading(!reset);
         setError(null);
         try {
-            const res = await api.get('/api/gallery');
-            setMedia(res.data || []);
+            const res = await api.get(`/api/gallery?page=${reset ? 1 : page}&limit=${ITEMS_PER_PAGE}`);
+            const newMedia = res.data || [];
+            if (reset) {
+                setMedia(newMedia);
+                setPage(2);
+            } else {
+                setMedia(prev => [...prev, ...newMedia]);
+                setPage(prev => prev + 1);
+            }
+            setHasMore(newMedia.length === ITEMS_PER_PAGE);
         } catch (err) {
             setError('Failed to load gallery');
         } finally {
             setLoading(false);
+            setMediaLoading(false);
         }
-    }, []);
+    }, [page]);
 
     useEffect(() => {
-        loadMedia();
-    }, [loadMedia]);
+        loadMedia(true);
+        // eslint-disable-next-line
+    }, []);
 
     // Lock body scroll when lightbox is open
     useEffect(() => {
@@ -87,11 +106,41 @@ const Gallery = () => {
         fileInputRef.current?.click();
     };
 
-    const handleFileSelect = (e) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setSelectedFileName(file.name);
+    const openCamera = () => {
+        if (!token) {
+            navigate('/login', { state: { from: '/user/gallery' } });
+            return;
         }
+        fileInputRef.current?.setAttribute('capture', 'environment');
+        fileInputRef.current?.click();
+        setTimeout(() => fileInputRef.current?.removeAttribute('capture'), 1000);
+    };
+
+    const handleFileSelect = async (e) => {
+        const files = Array.from(e.target.files || []);
+        let errorFound = false;
+        const newFiles = [];
+        const newHashes = [];
+        for (const file of files) {
+            try {
+                const hash = await hashFile(file);
+                if (selectedFileHashes.includes(hash) || newHashes.includes(hash)) {
+                    errorFound = true;
+                    continue;
+                }
+                newFiles.push(file);
+                newHashes.push(hash);
+            } catch (err) {
+                // Ignore file if hashing fails
+            }
+        }
+        if (errorFound) {
+            setError('Duplicate files were ignored.');
+            setTimeout(() => setError(null), 3000);
+        }
+        setSelectedFiles(prev => [...prev, ...newFiles]);
+        setSelectedFileHashes(prev => [...prev, ...newHashes]);
+        setSelectedFileName([...selectedFiles, ...newFiles].map(f => f.name).join(', '));
     };
 
     const getOptimizedVideoUrl = (url) => {
@@ -107,9 +156,8 @@ const Gallery = () => {
     };
 
     const handleUploadClick = async () => {
-        const file = fileInputRef.current?.files?.[0];
-        if (!file) {
-            setError('Please select a file first');
+        if (!selectedFiles.length) {
+            setError('Please select file(s) first');
             setTimeout(() => setError(null), 3000);
             return;
         }
@@ -118,48 +166,43 @@ const Gallery = () => {
             setTimeout(() => setError(null), 3000);
             return;
         }
-
         const maxSize = 100 * 1024 * 1024;
-        if (file.size > maxSize) {
-            setError(`File too large! Max size is 100 MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)} MB`);
-            setTimeout(() => setError(null), 5000);
-            return;
+        for (const file of selectedFiles) {
+            if (file.size > maxSize) {
+                setError(`File too large! Max size is 100 MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+                setTimeout(() => setError(null), 5000);
+                return;
+            }
         }
-
-        setUploading(true);
-        setError(null);
-        setSuccess(null);
-        try {
-            const form = new FormData();
-            form.append('file', file);
-            form.append('title', newTitle || file.name);
-            const categoryToUse = newCategory === 'Other' ? (customCategory || 'Hostel') : newCategory;
-            form.append('category', categoryToUse);
-
-            await api.post('/api/gallery/upload', form, {
-                headers: {
-                    Authorization: `Bearer ${token}`
+        // Fire-and-forget UX
+        setSuccess('Your files will be uploaded in the background.');
+        setSelectedFileName('');
+        setSelectedFiles([]);
+        setSelectedFileHashes([]);
+        fileInputRef.current.value = '';
+        setNewTitle('');
+        setNewCategory('Hostel');
+        setCustomCategory('');
+        setTimeout(() => setSuccess(null), 3000);
+        setShowUploadSection(false);
+        // Upload in background
+        (async () => {
+            try {
+                for (const file of selectedFiles) {
+                    const form = new FormData();
+                    form.append('file', file);
+                    form.append('title', newTitle || file.name);
+                    const categoryToUse = newCategory === 'Other' ? (customCategory || 'Hostel') : newCategory;
+                    form.append('category', categoryToUse);
+                    await api.post('/api/gallery/upload', form, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
                 }
-            });
-
-            setNewTitle('');
-            setNewCategory('Hostel');
-            setCustomCategory('');
-            setSelectedFileName('');
-            fileInputRef.current.value = '';
-            setSelectedId(null);
-            setSuccess('Upload successful! 🎉');
-            setTimeout(() => {
-                setSuccess(null);
-                setShowUploadSection(false);
-            }, 2000);
-            await loadMedia();
-        } catch (err) {
-            setError(err.response?.data?.message || err.message || 'Upload failed');
-            setTimeout(() => setError(null), 4000);
-        } finally {
-            setUploading(false);
-        }
+                await loadMedia();
+            } catch (err) {
+                // Optionally: show a toast or notification
+            }
+        })();
     };
 
     const handleDelete = async (id) => {
@@ -171,16 +214,21 @@ const Gallery = () => {
         if (!window.confirm('Are you sure you want to delete this file? This action cannot be undone.')) {
             return;
         }
-        setDeleting(id); // Set loading state
+        // Remove from UI immediately
+        setMedia(prev => prev.filter(item => item._id !== id));
         setError(null);
         setSuccess(null);
+        setDeleting(id); // Set loading state (optional, for button state)
         try {
             await api.delete(`/api/gallery/${id}`, { headers: { Authorization: `Bearer ${token}` } });
             setSuccess('Deleted successfully');
             setTimeout(() => setSuccess(null), 2000);
-            await loadMedia();
         } catch (err) {
-            setError(err.response?.data?.message || 'Delete failed');
+            if (err.response?.status === 404) {
+                setError('File not found or already deleted.');
+            } else {
+                setError(err.response?.data?.message || 'Delete failed');
+            }
             setTimeout(() => setError(null), 3000);
         } finally {
             setDeleting(null); // Clear loading state
@@ -274,8 +322,46 @@ const Gallery = () => {
                                     type="file" 
                                     accept="image/*,video/*" 
                                     className="hidden" 
+                                    multiple
                                     onChange={handleFileSelect}
                                 />
+                                
+                                {selectedFiles.length > 0 && (
+                                    <div className="flex flex-wrap gap-3 mb-2 items-center">
+                                        {selectedFiles.map((file, idx) => (
+                                            <div key={idx} className="relative w-24 h-24 rounded-lg overflow-hidden border-2 border-indigo-300 dark:border-indigo-600 bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
+                                                {file.type.startsWith('image') ? (
+                                                    <img src={URL.createObjectURL(file)} alt={file.name} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <video src={URL.createObjectURL(file)} className="w-full h-full object-cover" />
+                                                )}
+                                                <button
+                                                    onClick={() => {
+                                                        const newFiles = [...selectedFiles];
+                                                        newFiles.splice(idx, 1);
+                                                        setSelectedFiles(newFiles);
+                                                        setSelectedFileName(newFiles.map(f => f.name).join(', '));
+                                                    }}
+                                                    className="absolute -top-3 -right-3 w-12 h-12 flex items-center justify-center rounded-full bg-white border-4 border-red-600 text-red-600 text-4xl font-extrabold shadow-lg z-10 hover:bg-red-600 hover:text-white transition-colors"
+                                                    aria-label="Remove"
+                                                    type="button"
+                                                    style={{ boxShadow: '0 2px 12px 0 rgba(255,0,0,0.15)' }}
+                                                >
+                                                    <span style={{fontSize: '2.5rem', color: '#dc2626', fontWeight: 900, lineHeight: 1}}>×</span>
+                                                </button>
+                                            </div>
+                                        ))}
+                                        <button
+                                            type="button"
+                                            onClick={openFilePicker}
+                                            className="w-24 h-24 flex flex-col items-center justify-center border-2 border-dashed border-indigo-300 dark:border-indigo-600 rounded-lg bg-white dark:bg-gray-800 text-indigo-500 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-400 ml-2"
+                                            style={{ minWidth: '6rem' }}
+                                        >
+                                            <span className="text-3xl">+</span>
+                                            <span className="text-xs mt-1">Add More</span>
+                                        </button>
+                                    </div>
+                                )}
                                 
                                 <div className="flex items-center gap-3">
                                     {selectedFileName ? (
@@ -301,42 +387,40 @@ const Gallery = () => {
                                     )}
                                 </div>
                                 
-                                {selectedFileName && (
-                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+                                    <input
+                                        type="text"
+                                        placeholder="Title (optional)"
+                                        value={newTitle}
+                                        onChange={(e) => setNewTitle(e.target.value)}
+                                        className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 text-sm flex-1 sm:flex-none"
+                                    />
+                                    <select
+                                        value={newCategory}
+                                        onChange={(e) => setNewCategory(e.target.value)}
+                                        className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 text-sm flex-1 sm:flex-none"
+                                    >
+                                        {['Hostel','Rooms','Mess','Events','Other'].map(c => <option key={c} value={c}>{c}</option>)}
+                                    </select>
+                                    {newCategory === 'Other' && (
                                         <input
                                             type="text"
-                                            placeholder="Title (optional)"
-                                            value={newTitle}
-                                            onChange={(e) => setNewTitle(e.target.value)}
+                                            placeholder="Custom category"
+                                            value={customCategory}
+                                            onChange={(e) => setCustomCategory(e.target.value)}
                                             className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 text-sm flex-1 sm:flex-none"
                                         />
-                                        <select
-                                            value={newCategory}
-                                            onChange={(e) => setNewCategory(e.target.value)}
-                                            className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 text-sm flex-1 sm:flex-none"
-                                        >
-                                            {['Hostel','Rooms','Mess','Events','Other'].map(c => <option key={c} value={c}>{c}</option>)}
-                                        </select>
-                                        {newCategory === 'Other' && (
-                                            <input
-                                                type="text"
-                                                placeholder="Custom category"
-                                                value={customCategory}
-                                                onChange={(e) => setCustomCategory(e.target.value)}
-                                                className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 text-sm flex-1 sm:flex-none"
-                                            />
-                                        )}
-                                        <button
-                                            onClick={handleUploadClick}
-                                            disabled={uploading}
-                                            className={`px-6 py-2 rounded-lg text-sm font-semibold text-white w-full sm:w-auto ${
-                                                uploading ? 'bg-indigo-300 dark:bg-indigo-400 cursor-not-allowed' : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700'
-                                            } transition-all`}
-                                        >
-                                            {uploading ? 'Uploading…' : 'Upload'}
-                                        </button>
-                                    </div>
-                                )}
+                                    )}
+                                    <button
+                                        onClick={handleUploadClick}
+                                        disabled={uploading}
+                                        className={`px-6 py-2 rounded-lg text-sm font-semibold text-white w-full sm:w-auto ${
+                                            uploading ? 'bg-indigo-300 dark:bg-indigo-400 cursor-not-allowed' : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700'
+                                        } transition-all`}
+                                    >
+                                        {uploading ? 'Uploading…' : 'Upload'}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </motion.div>
@@ -383,6 +467,9 @@ const Gallery = () => {
             {loading && (
                 <GalleryGridSkeleton count={6} />
             )}
+            {mediaLoading && !loading && (
+                <GalleryGridSkeleton count={3} />
+            )}
 
             {error && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 text-center mb-8">
@@ -397,8 +484,15 @@ const Gallery = () => {
             )}
 
             {!loading && !error && (
-
                 <>
+                    {/* No Images Message */}
+                    {(activeFilter === 'All' || activeFilter === 'Photos') && photos.length === 0 && (
+                        <div className="flex flex-col items-center justify-center py-16 text-gray-400 dark:text-gray-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 48 48" className="w-16 h-16 mb-4 opacity-40"><path stroke="currentColor" strokeWidth="2" d="M8 40V12a4 4 0 0 1 4-4h24a4 4 0 0 1 4 4v28M8 40h32M8 40v-4a4 4 0 0 1 4-4h16a4 4 0 0 1 4 4v4M24 20v8m0 0-3-3m3 3 3-3"/></svg>
+                            <div className="text-lg font-semibold mb-2">No images yet</div>
+                            <div className="text-sm">Be the first to add memories to the gallery!</div>
+                        </div>
+                    )}
                     {/* All Section with Show More */}
                     {(activeFilter === 'All' || activeFilter === 'Photos') && photos.length > 0 && (
                         <section className="mb-12">
@@ -419,7 +513,7 @@ const Gallery = () => {
                                             if (isShowMoreTile) {
                                                 return (
                                                     <motion.div
-                                                        key={photo._id}
+                                                        key={photo._id + '-' + idx}
                                                         layout
                                                         initial={{ opacity: 0, scale: 0.8 }}
                                                         animate={{ opacity: 1, scale: 1 }}
@@ -455,7 +549,7 @@ const Gallery = () => {
                                             }
                                             return (
                                                 <motion.div
-                                                    key={photo._id}
+                                                    key={photo._id + '-' + idx}
                                                     layout
                                                     initial={{ opacity: 0, scale: 0.8 }}
                                                     animate={{ opacity: 1, scale: 1 }}
@@ -476,6 +570,16 @@ const Gallery = () => {
                                                             src={photo.mediaUrl || photo.imageUrl}
                                                             alt={photo.title || 'Hostel'}
                                                             className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 hover:scale-110"
+                                                            onError={e => {
+                                                                e.target.style.display = 'none';
+                                                                const parent = e.target.parentNode;
+                                                                if (parent && !parent.querySelector('.img-error-msg')) {
+                                                                    const msg = document.createElement('div');
+                                                                    msg.className = 'img-error-msg absolute inset-0 flex items-center justify-center bg-red-100/80 text-red-700 text-xs font-bold z-20';
+                                                                    msg.innerText = 'Image failed to load (400 Bad Request)';
+                                                                    parent.appendChild(msg);
+                                                                }
+                                                            }}
                                                         />
                                                     </div>
                                                     <div className="pt-4 pb-2 px-2 flex items-center justify-between gap-2 min-w-0">
@@ -500,14 +604,15 @@ const Gallery = () => {
                                 </AnimatePresence>
                                 <EmptyPhotoBox label="Add more memories" onClick={openUploadSection} />
                             </div>
-                            {activeFilter === 'Photos' && displayedPhotos < photos.length && (
+                            {activeFilter === 'Photos' && displayedPhotos < photos.length && hasMore && (
                                 <motion.button
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    onClick={() => setDisplayedPhotos(prev => prev + ITEMS_PER_PAGE)}
+                                    onClick={() => loadMedia()}
                                     className="mt-8 mx-auto flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transition-all"
+                                    disabled={mediaLoading}
                                 >
-                                    <span>Show More</span>
+                                    <span>{mediaLoading ? 'Loading…' : 'Show More'}</span>
                                     <ChevronDown size={20} />
                                 </motion.button>
                             )}
@@ -534,7 +639,7 @@ const Gallery = () => {
                                             if (isShowMoreTile) {
                                                 return (
                                                     <motion.div
-                                                        key={photo._id}
+                                                        key={photo._id + '-' + idx}
                                                         layout
                                                         initial={{ opacity: 0, scale: 0.8 }}
                                                         animate={{ opacity: 1, scale: 1 }}
@@ -563,7 +668,7 @@ const Gallery = () => {
                                             }
                                             return (
                                                 <motion.div
-                                                    key={photo._id}
+                                                    key={photo._id + '-' + idx}
                                                     layout
                                                     initial={{ opacity: 0, scale: 0.8 }}
                                                     animate={{ opacity: 1, scale: 1 }}
@@ -584,6 +689,7 @@ const Gallery = () => {
                                                             src={photo.mediaUrl || photo.imageUrl}
                                                             alt={photo.title || activeFilter}
                                                             className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 hover:scale-110"
+                                                            onError={e => { e.target.style.display = 'none'; }}
                                                         />
                                                     </div>
                                                     <div className="pt-4 pb-2 px-2 flex items-center justify-between gap-2 min-w-0">
@@ -607,14 +713,15 @@ const Gallery = () => {
                                         })}
                                 </AnimatePresence>
                             </div>
-                            {displayedPhotos < all.filter(item => (item.type === 'image') || !!item.imageUrl).length && (
+                            {displayedPhotos < all.filter(item => (item.type === 'image') || !!item.imageUrl).length && hasMore && (
                                 <motion.button
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    onClick={() => setDisplayedPhotos(prev => prev + ITEMS_PER_PAGE)}
+                                    onClick={() => loadMedia()}
                                     className="mt-8 mx-auto flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transition-all"
+                                    disabled={mediaLoading}
                                 >
-                                    <span>Show More</span>
+                                    <span>{mediaLoading ? 'Loading…' : 'Show More'}</span>
                                     <ChevronDown size={20} />
                                 </motion.button>
                             )}
@@ -630,9 +737,9 @@ const Gallery = () => {
                             </h2>
                             <div className="flex overflow-x-auto gap-4 pb-4 snap-x snap-mandatory no-scrollbar">
                                 <AnimatePresence>
-                                    {videos.map((vid) => (
+                                    {videos.map((vid, idx) => (
                                         <motion.div
-                                            key={vid._id}
+                                            key={vid._id + '-' + idx}
                                             layout
                                             whileHover={{ scale: 1.02 }}
                                             onClick={() => setSelectedId(vid._id)}
@@ -701,7 +808,7 @@ const Gallery = () => {
                                 >
                                     <button className="absolute top-2 right-2 text-white text-3xl sm:text-5xl font-thin hover:rotate-90 transition-transform bg-black/40 rounded-full px-2 py-0.5 sm:px-3 sm:py-1" onClick={() => setSelectedId(null)}>&times;</button>
                                     {selectedMedia?.type === 'image' || selectedMedia?.imageUrl ? (
-                                        <img src={selectedMedia?.mediaUrl || selectedMedia?.imageUrl} className="max-h-[70vh] w-auto max-w-full rounded-2xl shadow-2xl object-contain" alt="" />
+                                        <img src={selectedMedia?.mediaUrl || selectedMedia?.imageUrl} className="max-h-[70vh] w-auto max-w-full rounded-2xl shadow-2xl object-contain" alt="" onError={e => { e.target.style.display = 'none'; }} />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center bg-black rounded-3xl overflow-hidden border border-white/10">
                                             <video 

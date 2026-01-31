@@ -69,7 +69,7 @@ app.use('/api/gallery', galleryRoutes);
 app.use('/api/games', gameRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/notifications', notificationRoutes);
-app.use('/api/notifications', creativeNotificationRoutes);
+// app.use('/api/notifications', creativeNotificationRoutes); // Removed to prevent route conflicts
 app.use('/api/user', creativeNotificationSettings);
 app.use('/api/push', pushRoutes);
 

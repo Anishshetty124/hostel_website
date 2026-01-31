@@ -30,35 +30,48 @@ const FoodMenu = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+
     useEffect(() => {
-        const fetchMenu = async () => {
+        let isMounted = true;
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const allDays = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        const todayIndex = new Date().getDay();
+        const todayName = allDays[todayIndex];
+        // 1. Fetch today's menu first
+        const fetchToday = async () => {
             setLoading(true);
             setError(null);
             try {
-                const headers = token ? { Authorization: `Bearer ${token}` } : {};
-                const res = await api.get('/api/food', { headers });
-                const menuByDay = {};
-                (res.data || []).forEach(dayObj => {
-                    // Support both old and new formats
-                    if (dayObj.meals) {
-                        menuByDay[dayObj.day] = dayObj.meals;
-                    } else {
-                        menuByDay[dayObj.day] = {
-                            breakfast: dayObj.breakfast,
-                            lunch: dayObj.lunch,
-                            snacks: dayObj.snacks,
-                            nightmeal: dayObj.nightmeal
-                        };
-                    }
-                });
-                setWeeklyMenu(menuByDay);
+                const res = await api.get('/api/food/today', { headers });
+                if (!isMounted) return;
+                if (res.data && res.data.day && res.data.meals) {
+                    setWeeklyMenu({ [res.data.day]: res.data.meals });
+                } else {
+                    setWeeklyMenu({ [todayName]: {} });
+                }
             } catch (err) {
-                setError('Failed to load menu.');
+                if (isMounted) setError('Failed to load today\'s menu.');
             } finally {
-                setLoading(false);
+                if (isMounted) setLoading(false);
             }
         };
-        fetchMenu();
+        fetchToday();
+
+        // 2. After a short delay, fetch other days in the background
+        setTimeout(() => {
+            allDays.forEach(day => {
+                if (day === todayName) return;
+                api.get(`/api/food/${day}`, { headers })
+                    .then(res => {
+                        if (res.data && res.data.day && res.data.meals && isMounted) {
+                            setWeeklyMenu(prev => ({ ...prev, [res.data.day]: res.data.meals }));
+                        }
+                    })
+                    .catch(() => {});
+            });
+        }, 500); // 0.5s delay before starting background fetch
+
+        return () => { isMounted = false; };
     }, [token]);
 
     const currentDayName = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date());

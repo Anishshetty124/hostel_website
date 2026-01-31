@@ -80,14 +80,20 @@ const uploadMedia = async (req, res) => {
 // @desc    Create media record (legacy endpoint for direct URLs)
 // @route   POST /api/gallery
 const createMedia = async (req, res) => {
-    const { type = 'image', mediaUrl, title, category = 'Hostel', provider = 'imagekit', fileId } = req.body;
-    if (!mediaUrl) return res.status(400).json({ message: 'mediaUrl is required' });
-    try {
-        const doc = await Gallery.create({ type, mediaUrl, title, category, provider, fileId, uploadedBy: req.user?._id });
-        res.status(201).json(doc);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+  const { type = 'image', mediaUrl, title, category = 'Hostel', provider = 'imagekit', fileId, hash } = req.body;
+  if (!mediaUrl) return res.status(400).json({ message: 'mediaUrl is required' });
+  try {
+    if (hash) {
+      const existing = await Gallery.findOne({ hash });
+      if (existing) {
+        return res.status(409).json({ message: 'Duplicate image detected', data: existing });
+      }
     }
+    const doc = await Gallery.create({ type, mediaUrl, title, category, provider, fileId, uploadedBy: req.user?._id, hash });
+    res.status(201).json(doc);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 // @desc    Delete media (admin only)

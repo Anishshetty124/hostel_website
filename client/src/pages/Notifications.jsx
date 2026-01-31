@@ -1,10 +1,12 @@
 import { useEffect, useState, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import { AuthContext } from '../context/AuthContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 const Notifications = () => {
   const { token } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -21,6 +23,17 @@ const Notifications = () => {
       setRemovingId(null);
     }
   };
+
+  // Mark notifications as seen on mount
+  useEffect(() => {
+    async function markSeen() {
+      try {
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        await api.post('/api/notifications/mark-seen', {}, { headers });
+      } catch {}
+    }
+    markSeen();
+  }, [token]);
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -50,11 +63,17 @@ const Notifications = () => {
       ) : (
         <ul className="space-y-4">
           {notifications.map((n, i) => (
-            <li key={n._id || i} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700 relative group flex flex-col">
+            <li
+              key={n._id || i}
+              className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700 relative group flex flex-col cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/10 transition"
+              onClick={() => {
+                if (n.type === 'food') navigate('/user/food-menu');
+              }}
+            >
               <button
                 className="absolute top-2 right-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 text-lg font-bold p-1 rounded transition"
                 title="Remove notification"
-                onClick={() => handleRemove(n._id)}
+                onClick={e => { e.stopPropagation(); handleRemove(n._id); }}
                 disabled={removingId === n._id}
                 style={{ opacity: removingId === n._id ? 0.5 : 1 }}
               >
@@ -75,9 +94,11 @@ const Notifications = () => {
                   <span className={
                     n.type === 'notice'
                       ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 px-2 py-0.5 rounded'
-                      : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200 px-2 py-0.5 rounded'
+                      : n.type === 'food'
+                        ? 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-200 px-2 py-0.5 rounded'
+                        : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200 px-2 py-0.5 rounded'
                   }>
-                    {n.type === 'notice' ? 'Notice from Admin/Warden' : 'Personal Message'}
+                    {n.type === 'notice' ? 'Notice from Admin/Warden' : n.type === 'food' ? 'Food Menu' : 'Personal Message'}
                   </span>
                 )}
               </div>

@@ -6,6 +6,30 @@ const User = require('../models/User');
 const { protect, admin } = require('../middleware/authMiddleware');
 const { sendPushToUser, sendPushToAll } = require('../utils/pushService');
 
+// Mark all notifications as seen/read for the current user
+router.post('/mark-seen', protect, async (req, res) => {
+  try {
+    // Mark all private notifications for user and all public notifications as read
+    await Notification.updateMany(
+      {
+        $and: [
+          { read: false },
+          {
+            $or: [
+              { isPublic: true },
+              { user: req.user._id }
+            ]
+          }
+        ]
+      },
+      { $set: { read: true } }
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to mark notifications as seen' });
+  }
+});
+
 // Delete a notification by ID (user can only delete their own or public notifications)
 router.delete('/:id', protect, async (req, res) => {
   try {
@@ -34,6 +58,30 @@ router.get('/', protect, async (req, res) => {
     res.json(notifications);
   } catch (err) {
     res.status(500).json({ message: err.message || 'Failed to fetch notifications' });
+  }
+});
+
+// GET unseen notifications count for user
+// Unseen notifications count: include both public and private notifications for the user
+router.get('/unseen-count', require('../middleware/authMiddleware').protect, async (req, res) => {
+  try {
+    const Notification = require('../models/Notification');
+    // Count unseen: (1) public and not read by user, (2) private and not read
+    // For simplicity, treat 'read' as 'seen' (your schema uses 'read')
+    const count = await Notification.countDocuments({
+      $and: [
+        { read: false },
+        {
+          $or: [
+            { isPublic: true },
+            { user: req.user._id }
+          ]
+        }
+      ]
+    });
+    res.json({ count });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch unseen notifications count' });
   }
 });
 

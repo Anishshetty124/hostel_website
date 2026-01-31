@@ -16,7 +16,7 @@ const ManageRooms = () => {
     const handleSave = async () => {
         setSaving(true);
         try {
-            await api.put(`/api/rooms/hostelrecords/${editRoomId}`, editData, {
+            await api.put(`/api/rooms/hostelrecords/${editRoomId}`, { ...editData, roomNumber: Number(editData.roomNumber) }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setEditRoomId(null);
@@ -26,12 +26,8 @@ const ManageRooms = () => {
             const res = await api.get('/api/rooms/hostelrecords', {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            const sorted = [...res.data].sort((a, b) => {
-                if (a.roomNumber && b.roomNumber) {
-                    return a.roomNumber.localeCompare(b.roomNumber, undefined, { numeric: true, sensitivity: 'base' });
-                }
-                return 0;
-            });
+            // Sort by roomNumber (numeric sort)
+            const sorted = [...res.data].sort((a, b) => (a.roomNumber ?? 0) - (b.roomNumber ?? 0));
             setRooms(sorted);
             setTimeout(() => setSuccess(null), 2000);
         } catch (err) {
@@ -61,16 +57,13 @@ const ManageRooms = () => {
                 const res = await api.get('/api/rooms/hostelrecords', {
                     headers: { Authorization: `Bearer ${token}` }
                 });
-                // Sort by roomNumber (alphanumeric sort)
-                const sorted = [...res.data].sort((a, b) => {
-                    if (a.roomNumber && b.roomNumber) {
-                        return a.roomNumber.localeCompare(b.roomNumber, undefined, { numeric: true, sensitivity: 'base' });
-                    }
-                    return 0;
-                });
+                // Sort by roomNumber (numeric sort)
+                const sorted = [...res.data].sort((a, b) => (a.roomNumber ?? 0) - (b.roomNumber ?? 0));
                 setRooms(sorted);
             } catch (err) {
                 setError(err.response?.data?.message || 'Failed to fetch rooms');
+                // Log error to browser console for debugging
+                console.error('[ManageRooms] Failed to fetch rooms:', err, err?.response);
             } finally {
                 setLoading(false);
             }
@@ -95,7 +88,7 @@ const ManageRooms = () => {
 
     const handleAddMember = (e) => {
         e.preventDefault();
-        setConfirmModal({ open: true, action: 'add', member: null, payload: { ...addData } });
+        setConfirmModal({ open: true, action: 'add', member: null, payload: { ...addData, roomNumber: Number(addData.roomNumber) } });
     };
 
     const confirmAdd = async () => {
@@ -104,7 +97,7 @@ const ManageRooms = () => {
         setAddSuccess(null);
         setConfirmModal({ open: false, action: '', member: null, payload: null });
         try {
-            const res = await api.post('/api/rooms/hostelrecords', confirmModal.payload, {
+            const res = await api.post('/api/rooms/hostelrecords', { ...confirmModal.payload, roomNumber: Number(confirmModal.payload.roomNumber) }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setAddSuccess('Member added!');
@@ -113,12 +106,7 @@ const ManageRooms = () => {
             const res2 = await api.get('/api/rooms/hostelrecords', {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            const sorted = [...res2.data].sort((a, b) => {
-                if (a.roomNumber && b.roomNumber) {
-                    return a.roomNumber.localeCompare(b.roomNumber, undefined, { numeric: true, sensitivity: 'base' });
-                }
-                return 0;
-            });
+            const sorted = [...res2.data].sort((a, b) => (a.roomNumber ?? 0) - (b.roomNumber ?? 0));
             setRooms(sorted);
             setTimeout(() => setAddSuccess(null), 2000);
         } catch (err) {
@@ -146,12 +134,7 @@ const ManageRooms = () => {
             const res = await api.get('/api/rooms/hostelrecords', {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            const sorted = [...res.data].sort((a, b) => {
-                if (a.roomNumber && b.roomNumber) {
-                    return a.roomNumber.localeCompare(b.roomNumber, undefined, { numeric: true, sensitivity: 'base' });
-                }
-                return 0;
-            });
+            const sorted = [...res.data].sort((a, b) => (a.roomNumber ?? 0) - (b.roomNumber ?? 0));
             setRooms(sorted);
             setTimeout(() => setSuccess(null), 2000);
         } catch (err) {
@@ -167,14 +150,14 @@ const ManageRooms = () => {
             <div className="text-gray-500 dark:text-gray-300">Loading rooms...</div>
         </div>
     );
-    if (error) return <div className="text-center py-10 text-red-500 dark:text-red-400">{error}</div>;
+    if (error) return <div className="text-center py-10 text-red-500 dark:text-red-400 font-semibold">{error}</div>;
 
     // Filtered and paginated rooms
     const filteredRooms = rooms.filter(room => {
         const q = searchVar.trim().toLowerCase();
         if (!q) return true;
         return (
-            (room.roomNumber && room.roomNumber.toLowerCase().includes(q)) ||
+            (room.roomNumber && String(room.roomNumber).toLowerCase().includes(q)) ||
             (room.fullName && room.fullName.toLowerCase().includes(q)) ||
             (room.firstName && room.firstName.toLowerCase().includes(q))
         );
@@ -191,7 +174,7 @@ const ManageRooms = () => {
                 <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-2">Add Members</h2>
             </div>
             <form onSubmit={handleAddMember} className="mb-6 bg-gray-50 dark:bg-gray-800 rounded-lg shadow p-4 flex flex-col sm:flex-row gap-3 items-center justify-between border border-gray-200 dark:border-gray-700">
-                <div className="flex flex-col sm:flex-row gap-2 w-full">
+                <div className="flex flex-col sm:flex-row gap-2 w-full items-center sm:items-stretch justify-center">
                                         <select
                                                 name="roomNumber"
                                                 className="w-full sm:w-32 px-2 py-1 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none"
@@ -215,8 +198,8 @@ const ManageRooms = () => {
                     <input
                         name="fullName"
                         type="text"
-                        className="w-full sm:w-48 px-2 py-1 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none"
-                        placeholder="Full Name"
+                        className="w-full sm:w-48 px-2 py-1 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none text-center sm:text-left"
+                        placeholder="Full Name (as in hostel records)"
                         value={addData.fullName}
                         onChange={handleAddChange}
                         required

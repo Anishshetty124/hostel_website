@@ -1,8 +1,23 @@
 
-const { protect, admin } = require('../middleware/authMiddleware');
 const express = require('express');
 const router = express.Router();
+const { protect, admin } = require('../middleware/authMiddleware');
 const HostelRecord = require('../models/HostelRecord');
+
+// GET: Members for the logged-in user's room (user access)
+router.get('/my-room-members', protect, async (req, res) => {
+    try {
+        // Assume user's roomNumber is stored in req.user.roomNumber
+        const userRoomNumber = req.user.roomNumber;
+        if (!userRoomNumber) {
+            return res.status(400).json({ message: 'No room number found for your account.' });
+        }
+        const members = await HostelRecord.find({ roomNumber: userRoomNumber });
+        res.status(200).json(members);
+    } catch (err) {
+        res.status(500).json({ message: err.message || 'Failed to fetch room members' });
+    }
+});
 
 // DELETE: Remove a member (delete HostelRecord by id)
 router.delete('/hostelrecords/:id', protect, admin, async (req, res) => {
@@ -22,8 +37,6 @@ router.post('/hostelrecords', protect, admin, async (req, res) => {
         if (!roomNumber || !fullName) {
             return res.status(400).json({ message: 'Room number and full name are required.' });
         }
-        // Ensure roomNumber is a string
-        roomNumber = String(roomNumber).trim();
         // Only allow adding to allowed admin ranges
         function isAllowedRoomNumber(room) {
             const n = parseInt(room, 10);
@@ -43,6 +56,7 @@ router.post('/hostelrecords', protect, admin, async (req, res) => {
             return res.status(400).json({ message: 'Invalid room number. Admin can only add to rooms 1-10, 101-113, 201-213, 301-313, 401-413, 501-513, 601-613.' });
         }
         // Enforce max 4 members per room
+        roomNumber = Number(roomNumber);
         const memberCount = await HostelRecord.countDocuments({ roomNumber });
         if (memberCount >= 4) {
             return res.status(400).json({ message: 'This room already has 4 members. You cannot add more than 4 members to a room.' });
@@ -159,4 +173,4 @@ router.put('/hostelrecords/:id', protect, admin, async (req, res) => {
 });
 
 
-module.exports = router; 
+module.exports = router;

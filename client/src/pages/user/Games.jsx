@@ -19,6 +19,11 @@ const Games = () => {
     const [minesweeperDifficulty, setMinesweeperDifficulty] = useState('medium');
     const modalRef = useRef(null);
 
+    // Scroll to top on mount (fixes mobile scroll issue)
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'auto' });
+    }, []);
+
     // Accessibility: trap focus in modal, close on Escape
     useEffect(() => {
         if (!selectedGame) return;

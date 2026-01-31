@@ -33,6 +33,7 @@ export default function AdminNotificationManager() {
 
   return (
     <div className="max-w-xl mx-auto bg-white dark:bg-gray-900 rounded-xl shadow p-6 mt-8">
+      {status && <div className={`mb-4 text-center font-semibold ${status.includes('fail') ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>{status}</div>}
       <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Creative Notifications Manager</h1>
       <div className="mb-4">
         <label className="font-semibold">Enable creative notifications for all users:</label>
@@ -43,7 +44,6 @@ export default function AdminNotificationManager() {
         >
           {enabled ? 'ON' : 'OFF'}
         </button>
-        {status && <span className="ml-4 text-sm text-green-600 dark:text-green-400">{status}</span>}
       </div>
       <div>
         <h2 className="font-semibold mb-2">Current Notification Schedules</h2>

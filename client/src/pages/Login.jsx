@@ -1,4 +1,5 @@
 import { useState, useContext, useRef } from "react";
+import { toast } from 'react-hot-toast';
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import Logo from "../assets/logo.svg";
@@ -59,10 +60,12 @@ const Login = () => {
         }
       } else {
         setStatus({ loading: false, error: result.message || "Login failed" });
+        toast.error("Login failed. Please check your name in the hostel record. It may be different from your real name.");
         console.error('[Login] Login error:', result.message || "Login failed");
       }
     } catch (error) {
       setStatus({ loading: false, error: "Login failed" });
+      toast.error("Login failed. Please check your name in the hostel record. It may be different from your real name.");
       console.error('[Login] Login error:', error);
     }
   };
@@ -114,7 +117,16 @@ const Login = () => {
         </div>
 
         {/* Form Panel */}
-        <div className="bg-white dark:bg-gray-800/80 backdrop-blur-sm p-8 md:p-12 flex flex-col justify-center">
+        <div className="bg-white dark:bg-gray-800/80 backdrop-blur-sm p-8 md:p-12 flex flex-col justify-center relative">
+
+          {/* Register Link - Top, Highlighted */}
+          <div className="mb-6 text-center">
+            <span className="inline-block px-4 py-2 rounded-full font-semibold text-indigo-700 dark:text-indigo-200 bg-indigo-50 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-700 text-base md:text-lg">
+              Don’t have an account?{' '}
+              <Link to="/register" className="underline underline-offset-2 font-bold text-indigo-600 dark:text-indigo-300 hover:text-indigo-800 dark:hover:text-indigo-100 transition-colors">Register</Link>
+            </span>
+          </div>
+
           <button 
             onClick={() => navigate('/user/dashboard')}
             className="inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 text-sm font-medium transition-colors w-fit"
@@ -277,10 +289,7 @@ const Login = () => {
             </div>
           )}
 
-          <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-            Don’t have an account? {" "}
-            <Link to="/register" className="font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">Register</Link>
-          </div>
+          {/* Register Link moved to top for visibility */}
         </div>
       </div>
     </div>

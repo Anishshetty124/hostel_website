@@ -1,4 +1,4 @@
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ShieldCheck, MessageSquare, Home, Users } from 'lucide-react';
 import { AuthContext } from '../../context/AuthContext';
@@ -36,9 +36,11 @@ const cards = [
 
 const AdminDashboard = () => {
     const { user } = useContext(AuthContext);
+    const [error, setError] = useState(null);
 
     return (
         <div className="space-y-6">
+            {error && <div className="text-center text-red-500 font-semibold mb-4">{error}</div>}
             <div className="relative overflow-hidden bg-white/80 dark:bg-gray-900/70 backdrop-blur rounded-2xl border border-slate-200/70 dark:border-gray-800 shadow-lg shadow-indigo-200/40 dark:shadow-none p-6">
                 <div className="absolute -right-12 -top-16 h-40 w-40 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 dark:from-indigo-600/20 dark:to-purple-600/20 rounded-full blur-3xl" />
                 <div className="absolute -left-16 -bottom-20 h-48 w-48 bg-gradient-to-br from-blue-400/20 to-cyan-400/20 dark:from-blue-500/20 dark:to-cyan-500/20 rounded-full blur-3xl" />

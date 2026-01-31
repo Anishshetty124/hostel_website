@@ -63,6 +63,7 @@ const SendNotice = () => {
 
   return (
     <div className="max-w-xl mx-auto bg-white dark:bg-gray-900 rounded-xl shadow p-6 mt-8">
+      {status && <div className={`mb-4 text-center font-semibold ${status.includes('success') ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{status}</div>}
       <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Send Notice / Message</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -133,7 +134,6 @@ const SendNotice = () => {
         >
           {loading ? <LoadingSpinner message="Sending..." /> : 'Send'}
         </button>
-        {status && <div className="mt-2 text-sm font-medium text-green-600 dark:text-green-400">{status}</div>}
       </form>
     </div>
   );

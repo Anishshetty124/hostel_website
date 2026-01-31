@@ -4,9 +4,10 @@ import GameArena from './pages/user/GameArena';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthContext, AuthProvider } from './context/AuthContext';
 import { ProtectedRoute, AdminRoute } from './routes/ProtectedRoute';
-import { useContext, useEffect } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { subscribeUserToPush } from './utils/push';
 const PUBLIC_VAPID_KEY = 'BKk5EmsV8gS6MkGUE7hZf5DjKD6JsinOPfzVPH3xFK1WF9vNRcsLR5u1rTSzrMhgwIcstnloUHKMdD5rgZXX6D8';
+
 import LoadingSpinner from './components/LoadingSpinner';
 
 // Auth Pages
@@ -146,6 +147,7 @@ function App() {
     }
     subscribe();
   }, [user, token]);
+
   return (
     <BrowserRouter>
       <AuthProvider>
