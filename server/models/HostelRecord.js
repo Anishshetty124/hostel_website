@@ -22,4 +22,4 @@ hostelRecordSchema.index({ roomNumber: 1 });
 hostelRecordSchema.index({ firstName: 1 });
  
 // --- THE CRITICAL FIX ---
-module.exports = mongoose.model('HostelRecord', hostelRecordSchema, 'hostelrecords');
+module.exports = mongoose.model('HostelRecord', hostelRecordSchema, 'hostelrecords');  

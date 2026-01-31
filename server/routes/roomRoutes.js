@@ -118,7 +118,7 @@ router.put('/hostelrecords/:id', protect, admin, async (req, res) => {
         if (!original) return res.status(404).json({ message: 'HostelRecord not found' });
 
         // Only allow changing to a valid room number in the allowed admin range
-        const newRoomNumber = req.body.roomNumber && req.body.roomNumber.trim();
+        const newRoomNumber = req.body.roomNumber;
         function isAllowedRoomNumber(room) {
             // Allowed ranges: 1-10, 101-113, 201-213, 301-313, 401-413, 501-513, 601-613
             const n = parseInt(room, 10);
@@ -164,6 +164,8 @@ router.put('/hostelrecords/:id', protect, admin, async (req, res) => {
 
         res.status(200).json({ updated: original, edit });
     } catch (err) {
+        // Log the error for debugging
+        console.log('PUT /hostelrecords/:id error:', err);
         // Handle duplicate key error (unique index violation)
         if (err.code === 11000 && err.keyPattern && err.keyPattern.roomNumber) {
             return res.status(400).json({ message: 'Room number already exists. Please choose a unique room number.' });
