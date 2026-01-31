@@ -1,0 +1,9 @@
+# Root .gitignore for all environments
+node_modules
+.env
+*.log
+package-lock.json
+dist
+.DS_Store
+.vscode/
+.idea/
