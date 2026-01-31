@@ -806,7 +806,14 @@ const Gallery = () => {
                                     className="w-full max-w-xs xs:max-w-sm sm:max-w-lg md:max-w-2xl lg:max-w-4xl h-auto max-h-[90vh] flex items-center justify-center relative"
                                     onClick={(e) => e.stopPropagation()}
                                 >
-                                    <button className="absolute top-2 right-2 text-white text-3xl sm:text-5xl font-thin hover:rotate-90 transition-transform bg-black/40 rounded-full px-2 py-0.5 sm:px-3 sm:py-1" onClick={() => setSelectedId(null)}>&times;</button>
+                                    <button 
+                                        className="absolute top-2 right-2 text-white text-3xl sm:text-5xl font-thin hover:rotate-90 transition-transform bg-black/40 rounded-full px-2 py-0.5 sm:px-3 sm:py-1 z-50" 
+                                        style={{ zIndex: 100, pointerEvents: 'auto' }}
+                                        onClick={() => setSelectedId(null)}
+                                        aria-label="Close"
+                                    >
+                                        &times;
+                                    </button>
                                     {selectedMedia?.type === 'image' || selectedMedia?.imageUrl ? (
                                         <img src={selectedMedia?.mediaUrl || selectedMedia?.imageUrl} className="max-h-[70vh] w-auto max-w-full rounded-2xl shadow-2xl object-contain" alt="" onError={e => { e.target.style.display = 'none'; }} />
                                     ) : (
