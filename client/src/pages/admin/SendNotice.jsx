@@ -144,7 +144,7 @@ const SendNotice = () => {
       const token = localStorage.getItem('token');
       const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
       const res = await api.put(
-        `/api/notifications/${notifId}`,
+        `/notifications/${notifId}`,
         { title: editTitle, message: editMessage },
         config
       );
@@ -166,7 +166,7 @@ const SendNotice = () => {
       const token = localStorage.getItem('token');
       const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
       await api.delete(
-        `/api/notifications/${notifId}/admin`,
+        `/notifications/${notifId}/admin`,
         config
       );
       setNotifications(prev => prev.filter(n => n._id !== notifId));
