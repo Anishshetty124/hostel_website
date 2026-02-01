@@ -1,5 +1,6 @@
 const Gallery = require('../models/Gallery');
 const ImageKit = require('imagekit');
+const { redis, isRedisReady, deleteByPattern } = require('../utils/redisClient');
 
 const imagekit = new ImageKit({
   publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
@@ -11,7 +12,20 @@ const imagekit = new ImageKit({
 // @route   GET /api/gallery
 const getGallery = async (req, res) => {
     try {
-        const items = await Gallery.find().sort({ createdAt: -1 });
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.max(parseInt(req.query.limit, 10) || 12, 1);
+    const skip = (page - 1) * limit;
+    const cacheKey = `gallery:page:${page}:limit:${limit}`;
+    if (isRedisReady()) {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        return res.json(JSON.parse(cached));
+      }
+    }
+    const items = await Gallery.find()
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
         // Normalize legacy docs
         const normalized = items.map((i) => ({
             _id: i._id,
@@ -24,6 +38,9 @@ const getGallery = async (req, res) => {
             fileId: i.fileId || undefined,
             createdAt: i.createdAt,
         }));
+          if (isRedisReady()) {
+            await redis.setex(cacheKey, 120, JSON.stringify(normalized));
+          }
         res.json(normalized);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -69,6 +86,7 @@ const uploadMedia = async (req, res) => {
     });
 
     // DB record created
+    await deleteByPattern('gallery:page:*');
     res.status(201).json({ success: true, data: doc });
   } catch (error) {
     // Upload error handled
@@ -90,6 +108,7 @@ const createMedia = async (req, res) => {
       }
     }
     const doc = await Gallery.create({ type, mediaUrl, title, category, provider, fileId, uploadedBy: req.user?._id, hash });
+    await deleteByPattern('gallery:page:*');
     res.status(201).json(doc);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -112,6 +131,7 @@ const deleteMedia = async (req, res) => {
             try { await imagekit.deleteFile(doc.fileId); } catch (e) { /* ignore */ }
         }
         await doc.deleteOne();
+        await deleteByPattern('gallery:page:*');
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ message: error.message });

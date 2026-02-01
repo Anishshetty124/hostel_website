@@ -1,5 +1,6 @@
 // Admin: Update food menu for a specific date (temporary) or all days (permanent)
 const TempFoodMenu = require('../models/TempFoodMenu');
+const { redis, isRedisReady } = require('../utils/redisClient');
 const adminUpdateMenu = async (req, res) => {
     const { day, menu } = req.body;
     try {
@@ -21,6 +22,7 @@ const adminUpdateMenu = async (req, res) => {
             },
             { new: true, upsert: true }
         );
+        await invalidateFoodCache(day);
         return res.status(200).json({ success: true, data: updated });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -28,15 +30,45 @@ const adminUpdateMenu = async (req, res) => {
 };
 const FoodMenu = require('../models/FoodMenu');
 
+const getTodayInfo = () => {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${yyyy}-${mm}-${dd}`;
+    const dayName = today.toLocaleDateString('en-US', { weekday: 'long' });
+    return { todayStr, dayName };
+};
+
+const invalidateFoodCache = async (day) => {
+    if (!isRedisReady()) return;
+    const { todayStr, dayName } = getTodayInfo();
+    const keys = new Set([
+        `food:weekly:${todayStr}`,
+        `food:day:${todayStr}:${day}`,
+    ]);
+    if (day && day === dayName) {
+        keys.add(`food:today:${todayStr}`);
+    }
+    await redis.del(...Array.from(keys));
+};
+
 const getMenu = async (req, res) => {
     try {
-        // Check for a temporary menu for today
         const today = new Date();
         const yyyy = today.getFullYear();
         const mm = String(today.getMonth() + 1).padStart(2, '0');
         const dd = String(today.getDate()).padStart(2, '0');
         const todayStr = `${yyyy}-${mm}-${dd}`;
-
+        const cacheKey = `food:weekly:${todayStr}`;
+        if (isRedisReady()) {
+            const cached = await redis.get(cacheKey);
+            if (cached) {
+                return res.json(JSON.parse(cached));
+            }
+        }
+        // Check for a temporary menu for today
+        
         // Find all temp menus for today (for all days)
         const tempMenus = await TempFoodMenu.find({ date: todayStr });
         const tempMenusByDay = {};
@@ -55,6 +87,9 @@ const getMenu = async (req, res) => {
             }
             return dayObj;
         });
+        if (isRedisReady()) {
+            await redis.setex(cacheKey, 300, JSON.stringify(mergedMenu));
+        }
         res.json(mergedMenu);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -77,6 +112,7 @@ const updateMenu = async (req, res) => {
             update,
             { new: true, upsert: true }
         );
+        await invalidateFoodCache(day);
         res.status(200).json(updatedMenu);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -100,6 +136,7 @@ const setDayMenu = async (req, res) => {
             },
             { new: true, upsert: true, runValidators: true }
         );
+        await invalidateFoodCache(day);
         res.status(200).json({ success: true, data: updatedMenu });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -124,6 +161,13 @@ const getTodayMenu = async (req, res) => {
         const mm = String(today.getMonth() + 1).padStart(2, '0');
         const dd = String(today.getDate()).padStart(2, '0');
         const todayStr = `${yyyy}-${mm}-${dd}`;
+        const cacheKey = `food:today:${todayStr}`;
+        if (isRedisReady()) {
+            const cached = await redis.get(cacheKey);
+            if (cached) {
+                return res.json(JSON.parse(cached));
+            }
+        }
 
         // Try to find a temp menu for today for any day
         const tempMenus = await TempFoodMenu.find({ date: todayStr });
@@ -139,6 +183,9 @@ const getTodayMenu = async (req, res) => {
         // If temp menu exists for today, use it
         if (tempMenusByDay[dayName]) {
             menu = { day: dayName, meals: tempMenusByDay[dayName] };
+        }
+        if (isRedisReady()) {
+            await redis.setex(cacheKey, 180, JSON.stringify(menu));
         }
         res.json(menu);
     } catch (error) {
@@ -157,14 +204,29 @@ const getDayMenu = async (req, res) => {
         const mm = String(today.getMonth() + 1).padStart(2, '0');
         const dd = String(today.getDate()).padStart(2, '0');
         const todayStr = `${yyyy}-${mm}-${dd}`;
+        const cacheKey = `food:day:${todayStr}:${day}`;
+        if (isRedisReady()) {
+            const cached = await redis.get(cacheKey);
+            if (cached) {
+                return res.json(JSON.parse(cached));
+            }
+        }
         const tempMenu = await TempFoodMenu.findOne({ date: todayStr, day });
         if (tempMenu && tempMenu.menu) {
-            return res.json({ day, meals: tempMenu.menu });
+            const payload = { day, meals: tempMenu.menu };
+            if (isRedisReady()) {
+                await redis.setex(cacheKey, 180, JSON.stringify(payload));
+            }
+            return res.json(payload);
         }
         // Fallback to permanent menu
         const doc = await FoodMenu.findOne({ day });
         if (doc) {
-            return res.json({ day: doc.day, meals: doc.meals });
+            const payload = { day: doc.day, meals: doc.meals };
+            if (isRedisReady()) {
+                await redis.setex(cacheKey, 180, JSON.stringify(payload));
+            }
+            return res.json(payload);
         }
         res.status(404).json({ message: 'Menu not found for this day' });
     } catch (error) {

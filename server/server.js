@@ -7,6 +7,8 @@ const compression = require('compression');
 const http = require('http');
 const { Server } = require('socket.io');
 const rateLimit = require('express-rate-limit');
+const RedisStore = require('rate-limit-redis');
+const { redis, isRedisReady } = require('./utils/redisClient');
 
 // --- Import Routes ---
 const authRoutes = require('./routes/authRoutes');
@@ -65,12 +67,17 @@ app.use(express.json()); // Allow JSON data
 app.use(helmet());       // Security headers
 app.use(compression());  // Gzip compression for speed
 
-// --- Rate Limiting (basic, in-memory) ---
+// --- Rate Limiting (Redis-backed if available) ---
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 300, // limit each IP to 300 requests per window
     standardHeaders: true,
     legacyHeaders: false,
+    store: isRedisReady()
+        ? new RedisStore({
+            sendCommand: (...args) => redis.call(...args),
+        })
+        : undefined,
 });
 app.use('/api', apiLimiter);
 app.use(cors({

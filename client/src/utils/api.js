@@ -1,7 +1,13 @@
 import axios from 'axios';
 
+const getApiBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (!envUrl) return 'http://localhost:5000/api';
+  return envUrl.endsWith('/api') ? envUrl : `${envUrl.replace(/\/$/, '')}/api`;
+};
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  baseURL: getApiBaseUrl(),
   withCredentials: true, // if you use cookies/auth
 });
 
