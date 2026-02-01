@@ -29,7 +29,7 @@ const Notifications = () => {
     async function markSeen() {
       try {
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        await api.post('/api/notifications/mark-seen', {}, { headers });
+        await api.post('/notifications/mark-seen', {}, { headers });
       } catch {}
     }
     markSeen();
@@ -41,7 +41,7 @@ const Notifications = () => {
       setError(null);
       try {
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await api.get('/api/notifications', { headers });
+        const res = await api.get('/notifications', { headers });
         setNotifications(res.data || []);
       } catch (err) {
         setError('Failed to load notifications');

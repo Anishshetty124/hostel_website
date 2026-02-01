@@ -1,10 +1,37 @@
-import { Fragment } from "react";
+import { Fragment, useState, useEffect } from "react";
 import { Link, useOutletContext } from "react-router-dom";
-import { Utensils, Image as ImageIcon, MessageSquare, Home, Gamepad2, Megaphone } from "lucide-react";
+import { Utensils, Image as ImageIcon, MessageSquare, Home, Gamepad2, Megaphone, Download } from "lucide-react";
 import { DashboardGridSkeleton } from "../../components/SkeletonLoaders";
 
 const UserDashboard = () => {
   const { user } = useOutletContext();
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showInstallButton, setShowInstallButton] = useState(false);
+
+  useEffect(() => {
+    const handler = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallButton(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handler);
+
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    
+    if (outcome === 'accepted') {
+      setShowInstallButton(false);
+    }
+    
+    setDeferredPrompt(null);
+  };
 
   const modules = [
     {
@@ -75,14 +102,25 @@ const UserDashboard = () => {
   return (
     <div className="space-y-6 animate-fade-in-up">
       {/* Welcome Banner (show generic if not logged in) */}
-      <div className="relative overflow-hidden bg-white dark:bg-gray-800/60 rounded-2xl shadow-md shadow-gray-300/50 dark:shadow-gray-900/40 dark:border-gray-700/50 border border-gray-200/80 p-6 transition-colors">
+      <div className="relative overflow-hidden bg-white dark:bg-gray-800/60 rounded-2xl shadow-md shadow-gray-300/50 dark:shadow-gray-900/40 dark:border-gray-700/50 border border-gray-200/80 p-4 sm:p-6 transition-colors">
         <div className="absolute -right-10 -top-10 h-36 w-36 bg-gradient-to-br from-blue-500/20 to-purple-500/20 dark:from-blue-600/20 dark:to-purple-600/20 rounded-full blur-3xl"></div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white relative z-10">
           {user ? `Hello, ${user.firstName}! 👋` : 'Welcome to Hostel Dashboard'}
         </h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">
-          {user ? 'Welcome to your hostel dashboard. What would you like to do today?' : 'Explore features below. Login to access all features.'}
-        </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-2 relative z-10">
+          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
+            Welcome to your hostel dashboard. <span className="text-indigo-600 dark:text-indigo-400 font-semibold">Download our app by clicking "Add to Home Screen" & install for quick access.</span>
+          </p>
+          {showInstallButton && (
+            <button
+              onClick={handleInstallClick}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-colors shadow-lg hover:shadow-xl whitespace-nowrap text-sm sm:text-base"
+            >
+              <Download size={18} />
+              Install App
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Bento Grid */}

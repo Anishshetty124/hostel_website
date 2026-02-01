@@ -4,7 +4,7 @@ import api from '../../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { GalleryGridSkeleton } from '../../components/SkeletonLoaders';
 
@@ -44,7 +44,7 @@ const Gallery = () => {
         setMediaLoading(!reset);
         setError(null);
         try {
-            const res = await api.get(`/api/gallery?page=${reset ? 1 : page}&limit=${ITEMS_PER_PAGE}`);
+            const res = await api.get(`/gallery?page=${reset ? 1 : page}&limit=${ITEMS_PER_PAGE}`);
             const newMedia = res.data || [];
             if (reset) {
                 setMedia(newMedia);
@@ -194,7 +194,7 @@ const Gallery = () => {
                     form.append('title', newTitle || file.name);
                     const categoryToUse = newCategory === 'Other' ? (customCategory || 'Hostel') : newCategory;
                     form.append('category', categoryToUse);
-                    await api.post('/api/gallery/upload', form, {
+                    await api.post('/gallery/upload', form, {
                         headers: { Authorization: `Bearer ${token}` }
                     });
                 }
@@ -220,7 +220,7 @@ const Gallery = () => {
         setSuccess(null);
         setDeleting(id); // Set loading state (optional, for button state)
         try {
-            await api.delete(`/api/gallery/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+            await api.delete(`/gallery/${id}`, { headers: { Authorization: `Bearer ${token}` } });
             setSuccess('Deleted successfully');
             setTimeout(() => setSuccess(null), 2000);
         } catch (err) {
@@ -581,33 +581,6 @@ const Gallery = () => {
                                                                 }
                                                             }}
                                                         />
-                                                        {/* Download Button Overlay */}
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                const url = photo.mediaUrl || photo.imageUrl;
-                                                                const filename = photo.title || 'hostel-image';
-                                                                fetch(url)
-                                                                    .then(res => res.blob())
-                                                                    .then(blob => {
-                                                                        const blobUrl = window.URL.createObjectURL(blob);
-                                                                        const link = document.createElement('a');
-                                                                        link.href = blobUrl;
-                                                                        link.download = filename;
-                                                                        document.body.appendChild(link);
-                                                                        link.click();
-                                                                        document.body.removeChild(link);
-                                                                        window.URL.revokeObjectURL(blobUrl);
-                                                                    })
-                                                                    .catch(() => window.open(url, '_blank'));
-                                                            }}
-                                                            className="absolute top-2 right-2 bg-black/70 hover:bg-indigo-600 text-white p-2 rounded-full shadow-lg transition-all duration-300 z-10"
-                                                            title="Download image"
-                                                        >
-                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                                                            </svg>
-                                                        </button>
                                                     </div>
                                                     <div className="pt-4 pb-2 px-2 flex items-center justify-between gap-2 min-w-0">
                                                         <p className="font-bold text-gray-800 dark:text-gray-200 text-sm flex-1 truncate">{photo.title || 'Hostel'}</p>
@@ -651,6 +624,20 @@ const Gallery = () => {
                                 >
                                     <span>{mediaLoading ? 'Loading…' : 'Show More'}</span>
                                     <ChevronDown size={20} />
+                                </motion.button>
+                            )}
+                            {activeFilter === 'Photos' && displayedPhotos > ITEMS_PER_PAGE && (
+                                <motion.button
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    onClick={() => {
+                                        setDisplayedPhotos(ITEMS_PER_PAGE);
+                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                    }}
+                                    className="mt-4 mx-auto flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transition-all"
+                                >
+                                    <span>Show Less</span>
+                                    <ChevronUp size={20} />
                                 </motion.button>
                             )}
                             {activeFilter !== 'All' && (
@@ -733,33 +720,6 @@ const Gallery = () => {
                                                             className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 hover:scale-110"
                                                             onError={e => { e.target.style.display = 'none'; }}
                                                         />
-                                                        {/* Download Button Overlay */}
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                const url = photo.mediaUrl || photo.imageUrl;
-                                                                const filename = photo.title || 'hostel-image';
-                                                                fetch(url)
-                                                                    .then(res => res.blob())
-                                                                    .then(blob => {
-                                                                        const blobUrl = window.URL.createObjectURL(blob);
-                                                                        const link = document.createElement('a');
-                                                                        link.href = blobUrl;
-                                                                        link.download = filename;
-                                                                        document.body.appendChild(link);
-                                                                        link.click();
-                                                                        document.body.removeChild(link);
-                                                                        window.URL.revokeObjectURL(blobUrl);
-                                                                    })
-                                                                    .catch(() => window.open(url, '_blank'));
-                                                            }}
-                                                            className="absolute top-2 right-2 bg-black/70 hover:bg-indigo-600 text-white p-2 rounded-full shadow-lg transition-all duration-300 z-10"
-                                                            title="Download image"
-                                                        >
-                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                                                            </svg>
-                                                        </button>
                                                     </div>
                                                     <div className="pt-4 pb-2 px-2 flex items-center justify-between gap-2 min-w-0">
                                                         <p className="font-bold text-gray-800 dark:text-gray-200 text-sm flex-1 truncate">{photo.title || activeFilter}</p>
@@ -792,6 +752,20 @@ const Gallery = () => {
                                 >
                                     <span>{mediaLoading ? 'Loading…' : 'Show More'}</span>
                                     <ChevronDown size={20} />
+                                </motion.button>
+                            )}
+                            {displayedPhotos > ITEMS_PER_PAGE && (
+                                <motion.button
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    onClick={() => {
+                                        setDisplayedPhotos(ITEMS_PER_PAGE);
+                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                    }}
+                                    className="mt-4 mx-auto flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transition-all"
+                                >
+                                    <span>Show Less</span>
+                                    <ChevronUp size={20} />
                                 </motion.button>
                             )}
                         </section>

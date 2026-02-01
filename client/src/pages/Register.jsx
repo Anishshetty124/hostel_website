@@ -51,7 +51,7 @@ const Register = () => {
     setStatus({ loading: true, error: null });
 
     try {
-      await api.post("/api/auth/register", formData);
+      await api.post("/auth/register", formData);
       // Reset form after successful registration
       setFormData({
         firstName: "",

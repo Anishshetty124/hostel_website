@@ -3,11 +3,13 @@ import api from '../../utils/api';
 import {
     Plus, Search, Wrench, Zap,
     Trash2, Coffee, Clock, X,
-    CheckCircle2, AlertCircle, MessageCircle, RefreshCw
+    CheckCircle2, AlertCircle, MessageCircle, RefreshCw, Download
 } from 'lucide-react';
 import { AuthContext } from '../../context/AuthContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { StatsCardsSkeleton, ComplaintCardSkeleton } from '../../components/SkeletonLoaders';
+import { io } from 'socket.io-client';
+import { motion, AnimatePresence } from 'framer-motion';
  
 const categoryOptions = ['Electrical', 'Plumbing', 'Cleaning', 'Other'];
 const urgencyOptions = ['Low', 'Medium', 'High'];
@@ -31,9 +33,13 @@ const Complaints = () => {
         category: 'Electrical',
         urgency: 'Medium',
     });
+    const [selectedImages, setSelectedImages] = useState([]);
+    const [imagePreview, setImagePreview] = useState([]);
+    const [lightboxImage, setLightboxImage] = useState(null); // For image lightbox
 
     const cacheRef = useRef(null);
     const abortControllerRef = useRef(null);
+    const fileInputRef = useRef(null);
 
     const fetchComplaints = useCallback(async () => {
         if (!token) return;
@@ -53,7 +59,7 @@ const Complaints = () => {
                 setLoading(false);
                 return;
             }
-            const res = await api.get('/api/complaints', {
+            const res = await api.get('/complaints', {
                 headers: { Authorization: `Bearer ${token}` },
                 signal: abortControllerRef.current.signal
             });
@@ -71,6 +77,12 @@ const Complaints = () => {
 
     useEffect(() => {
         fetchComplaints();
+        
+        // Request notification permission when component mounts
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+        
         return () => {
             // Cleanup: abort request on unmount
             if (abortControllerRef.current) {
@@ -79,9 +91,103 @@ const Complaints = () => {
         };
     }, [fetchComplaints]);
 
+    // Socket.io connection for real-time updates
+    useEffect(() => {
+        const socketUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '');
+        const socket = io(socketUrl, {
+            transports: ['websocket', 'polling']
+        });
+
+        socket.on('connect', () => {
+            console.log('Socket connected');
+        });
+
+        // Listen for new complaints
+        socket.on('complaint:created', (newComplaint) => {
+            setComplaints((prev) => {
+                const updated = [newComplaint, ...prev];
+                cacheRef.current = updated;
+                return updated;
+            });
+        });
+
+        // Listen for complaint updates (replies, status changes)
+        socket.on('complaint:updated', (updatedComplaint) => {
+            setComplaints((prev) => {
+                const updated = prev.map((c) =>
+                    c._id === updatedComplaint._id ? updatedComplaint : c
+                );
+                cacheRef.current = updated;
+                return updated;
+            });
+        });
+
+        // Listen for complaint deletions
+        socket.on('complaint:deleted', (deletedId) => {
+            setComplaints((prev) => {
+                const updated = prev.filter((c) => c._id !== deletedId);
+                cacheRef.current = updated;
+                return updated;
+            });
+        });
+
+        socket.on('disconnect', () => {
+            console.log('Socket disconnected');
+        });
+
+        return () => {
+            socket.disconnect();
+        };
+    }, []);
+
     const handleFormChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleImageSelect = (e) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length + selectedImages.length > 5) {
+            setError('Maximum 5 images allowed');
+            return;
+        }
+        setSelectedImages([...selectedImages, ...files]);
+        // Create preview URLs
+        files.forEach(file => {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                setImagePreview(prev => [...prev, event.target.result]);
+            };
+            reader.readAsDataURL(file);
+        });
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
+    const handleRemoveImage = (index) => {
+        setSelectedImages(prev => prev.filter((_, i) => i !== index));
+        setImagePreview(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const uploadImagesToImageKit = async (files) => {
+        const uploadedUrls = [];
+        for (const file of files) {
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                const res = await api.post('/complaints/upload', formData, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'multipart/form-data'
+                    }
+                });
+                uploadedUrls.push(res.data.url || res.data.mediaUrl);
+            } catch (err) {
+                console.error('Image upload failed:', err);
+            }
+        }
+        return uploadedUrls;
     };
 
     const handleSubmit = async (e) => {
@@ -90,14 +196,36 @@ const Complaints = () => {
         setSubmitting(true);
         setError(null);
         try {
-            const res = await api.post('/api/complaints', formData, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            // Submit complaint immediately without waiting for image uploads
+            const res = await api.post('/complaints', 
+                { ...formData, images: [] },
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
             const newList = [res.data, ...complaints];
             setComplaints(newList);
             cacheRef.current = newList;
             setIsFormOpen(false);
             setFormData({ title: '', description: '', roomNumber: '', category: 'Electrical', urgency: 'Medium' });
+            setSelectedImages([]);
+            setImagePreview([]);
+            
+            // Upload images in background without blocking
+            if (selectedImages.length > 0) {
+                uploadImagesToImageKit(selectedImages)
+                    .then((imageUrls) => {
+                        if (imageUrls && imageUrls.length > 0) {
+                            return api.patch(`/complaints/${res.data._id}`, 
+                                { images: imageUrls },
+                                { headers: { Authorization: `Bearer ${token}` } }
+                            );
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Failed to attach images:', err);
+                    });
+            }
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to submit');
         } finally {
@@ -167,32 +295,34 @@ const Complaints = () => {
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-gray-900 font-sans text-slate-900 dark:text-gray-100 pb-10">
             {/* HEADER */}
-            <header className="bg-white dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 pt-8 pb-12 md:pt-12 md:pb-16 px-4 md:px-6">
+            <header className="bg-white dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 pt-4 pb-8 md:pt-12 md:pb-16 px-3 md:px-6">
                 <div className="max-w-7xl mx-auto">
-                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 md:gap-8">
+                    <div className="flex flex-col gap-4 md:gap-8">
                         <div className="relative">
-                            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tighter text-slate-900 dark:text-gray-100 uppercase leading-none">
+                            <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-black tracking-tighter text-slate-900 dark:text-gray-100 uppercase leading-none">
                                 Maintenance <span className="text-indigo-600 dark:text-indigo-400">Requests</span>
                             </h1>
-                            <div className="absolute -bottom-3 left-0 h-1.5 w-24 md:w-32 bg-indigo-600 dark:bg-indigo-500 rounded-full"></div>
+                            <div className="absolute -bottom-2 left-0 h-1 w-16 md:h-1.5 md:w-32 bg-indigo-600 dark:bg-indigo-500 rounded-full"></div>
                         </div>
 
-                        <button
-                            onClick={() => setIsFormOpen(true)}
-                            className="group relative inline-flex items-center justify-center px-6 md:px-8 py-3 md:py-4 font-bold text-white bg-indigo-600 dark:bg-indigo-600 hover:bg-indigo-700 dark:hover:bg-indigo-700 rounded-xl md:rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl"
-                        >
-                            <Plus size={20} className="mr-2" />
-                            New Request
-                        </button>
+                        <div className="flex gap-2 md:gap-4">
+                            <button
+                                onClick={() => setIsFormOpen(true)}
+                                className="group relative inline-flex items-center justify-center flex-1 px-4 md:px-8 py-2.5 md:py-4 font-bold text-sm md:text-base text-white bg-indigo-600 dark:bg-indigo-600 hover:bg-indigo-700 dark:hover:bg-indigo-700 rounded-lg md:rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl"
+                            >
+                                <Plus size={18} className="mr-1.5 md:mr-2" />
+                                New Request
+                            </button>
 
-                        <button
-                            onClick={fetchComplaints}
-                            disabled={loading}
-                            className="group relative inline-flex items-center justify-center px-4 md:px-6 py-3 md:py-4 font-bold text-indigo-600 dark:text-indigo-400 bg-white dark:bg-gray-800 border border-indigo-200 dark:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl md:rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50"
-                            title="Refresh to see new replies"
-                        >
-                            <RefreshCw size={20} className={`${loading ? 'animate-spin' : ''}`} />
-                        </button>
+                            <button
+                                onClick={fetchComplaints}
+                                disabled={loading}
+                                className="group relative inline-flex items-center justify-center px-3 md:px-6 py-2.5 md:py-4 font-bold text-indigo-600 dark:text-indigo-400 bg-white dark:bg-gray-800 border border-indigo-200 dark:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg md:rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50"
+                                title="Refresh to see new replies"
+                            >
+                                <RefreshCw size={18} className={`${loading ? 'animate-spin' : ''}`} />
+                            </button>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -209,12 +339,12 @@ const Complaints = () => {
                 {loading ? (
                     <StatsCardsSkeleton />
                 ) : (
-                    <div className="grid grid-cols-3 gap-2 md:gap-6 mb-8 md:mb-12">
+                    <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-6 mb-6 md:mb-12">
                         {stats.map((stat, idx) => (
-                            <div key={idx} className="group relative bg-white dark:bg-gray-800 rounded-lg md:rounded-3xl p-1 shadow-lg shadow-gray-300/60 dark:shadow-black/10 transition-all hover:shadow-xl">
-                                <div className={`h-full rounded-md md:rounded-[2.6rem] p-3 md:p-7 bg-gradient-to-br ${stat.color} border border-gray-200 dark:border-transparent`}>
-                                    <p className="text-[9px] md:text-sm font-bold uppercase text-slate-700 dark:text-gray-400 tracking-wider mb-1 md:mb-2">{stat.label}</p>
-                                    <p className="text-xl md:text-4xl font-black text-slate-900 dark:text-gray-100">{stat.count}</p>
+                            <div key={idx} className="group relative bg-white dark:bg-gray-800 rounded-xl md:rounded-3xl p-0.5 md:p-1 shadow-lg shadow-gray-300/60 dark:shadow-black/10 transition-all hover:shadow-xl">
+                                <div className={`h-full rounded-lg md:rounded-[2.6rem] p-2 sm:p-4 md:p-7 bg-gradient-to-br ${stat.color} border border-gray-200 dark:border-transparent`}>
+                                    <p className="text-[10px] sm:text-xs md:text-sm font-bold uppercase text-slate-700 dark:text-gray-400 tracking-wide mb-1 md:mb-2">{stat.label}</p>
+                                    <p className="text-lg sm:text-2xl md:text-4xl font-black text-slate-900 dark:text-gray-100">{stat.count}</p>
                                 </div>
                             </div>
                         ))}
@@ -222,48 +352,50 @@ const Complaints = () => {
                 )}
 
                 {/* SEARCH & FILTER */}
-                <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-8 md:mb-10">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-gray-500" size={20} />
+                <div className="flex flex-col gap-2 md:gap-4 mb-6 md:mb-10">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-gray-500" size={18} />
                         <input
                             type="text"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Search complaints..."
-                            className="w-full pl-12 pr-4 py-3 md:py-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl md:rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-slate-900 dark:text-gray-100 placeholder:text-slate-400 dark:placeholder:text-gray-500 shadow-sm"
+                            className="w-full pl-10 pr-3 py-2.5 md:py-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg md:rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm md:text-base text-slate-900 dark:text-gray-100 placeholder:text-slate-400 dark:placeholder:text-gray-500 shadow-sm"
                         />
                     </div>
-                    <div className="flex bg-white dark:bg-gray-800 p-1 md:p-1.5 rounded-xl md:rounded-2xl border border-gray-300 dark:border-gray-700 gap-1 md:gap-2 shadow-sm">
-                        {['all', 'pending', 'resolved'].map((t) => (
-                            <button
-                                key={t}
-                                onClick={() => setFilter(t)}
-                                className={`px-4 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl text-xs md:text-sm font-bold capitalize transition-all duration-300 ${
-                                    filter === t
-                                        ? 'bg-indigo-600 text-white shadow-lg'
-                                        : 'text-slate-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                }`}
-                            >
-                                {t}
-                            </button>
-                        ))}
-                    </div>
-
-                    {complaints.length > 1 && (
-                        <div className="flex items-center gap-2 bg-white dark:bg-gray-800 px-3 py-2 rounded-xl md:rounded-2xl border border-gray-300 dark:border-gray-700 shadow-sm">
-                            <span className="text-xs font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wide">Sort</span>
-                            <select
-                                value={sortBy}
-                                onChange={(e) => setSortBy(e.target.value)}
-                                className="text-xs md:text-sm font-semibold bg-transparent text-slate-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                            >
-                                <option value="newest">Newest</option>
-                                <option value="oldest">Oldest</option>
-                                <option value="urgency">Urgency (High-Low)</option>
-                                <option value="status">Status</option>
-                            </select>
+                    <div className="flex gap-2 md:gap-3">
+                        <div className="flex flex-1 bg-white dark:bg-gray-800 p-0.5 md:p-1 rounded-lg md:rounded-xl border border-gray-300 dark:border-gray-700 gap-0.5 md:gap-1 shadow-sm">
+                            {['all', 'pending', 'resolved'].map((t) => (
+                                <button
+                                    key={t}
+                                    onClick={() => setFilter(t)}
+                                    className={`flex-1 px-2 sm:px-3 md:px-6 py-1.5 md:py-2.5 rounded-md md:rounded-lg text-[11px] sm:text-xs md:text-sm font-bold capitalize transition-all duration-300 ${
+                                        filter === t
+                                            ? 'bg-indigo-600 text-white shadow-lg'
+                                            : 'text-slate-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                    }`}
+                                >
+                                    {t}
+                                </button>
+                            ))}
                         </div>
-                    )}
+
+                        {complaints.length > 1 && (
+                            <div className="flex items-center gap-1.5 bg-white dark:bg-gray-800 px-2 md:px-3 py-1.5 md:py-2 rounded-lg md:rounded-xl border border-gray-300 dark:border-gray-700 shadow-sm">
+                                <span className="text-[10px] md:text-xs font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wide whitespace-nowrap">Sort</span>
+                                <select
+                                    value={sortBy}
+                                    onChange={(e) => setSortBy(e.target.value)}
+                                    className="text-[11px] md:text-sm font-semibold bg-white dark:bg-gray-700 text-slate-800 dark:text-gray-100 border-0 focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded px-1"
+                                >
+                                    <option value="newest" className="bg-white text-slate-900">Newest</option>
+                                    <option value="oldest" className="bg-white text-slate-900">Oldest</option>
+                                    <option value="urgency" className="bg-white text-slate-900">Urgency</option>
+                                    <option value="status" className="bg-white text-slate-900">Status</option>
+                                </select>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* COMPLAINTS LIST */}
@@ -285,6 +417,7 @@ const Complaints = () => {
                                 complaint={c}
                                 onComplaintUpdate={(updatedC) => setComplaints(prev => prev.map(x => x._id === updatedC._id ? updatedC : x))}
                                 onComplaintDelete={(id) => setComplaints(prev => prev.filter(x => x._id !== id))}
+                                onImageClick={setLightboxImage}
                             />
                         ))
                     )}
@@ -293,23 +426,23 @@ const Complaints = () => {
 
             {/* FORM MODAL */}
             {isFormOpen && (
-                <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
+                <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-slate-900/40 dark:bg-slate-950/60 backdrop-blur-sm">
                     <div
-                        className="absolute inset-0 bg-slate-900/40 dark:bg-slate-950/60 backdrop-blur-sm animate-fade-in"
+                        className="absolute inset-0"
                         onClick={() => setIsFormOpen(false)}
                     />
-                    <div className="relative w-full md:max-w-lg bg-white dark:bg-gray-800 md:rounded-3xl shadow-2xl p-6 md:p-8 flex flex-col max-h-[90vh] md:max-h-none overflow-y-auto md:overflow-visible rounded-t-3xl">
-                        <div className="flex justify-between items-center mb-6 md:mb-8">
-                            <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-gray-100 tracking-tight">New Request</h2>
+                    <div className="relative w-full md:max-w-xl bg-white dark:bg-gray-800 md:rounded-3xl shadow-2xl p-4 md:p-8 flex flex-col max-h-[95vh] md:max-h-[90vh] overflow-y-auto rounded-t-2xl md:rounded-t-3xl">
+                        <div className="flex justify-between items-center mb-6 md:mb-8 sticky top-0 bg-white dark:bg-gray-800 -mx-4 -mt-4 md:-mx-8 md:-mt-8 px-4 md:px-8 py-4 md:py-6 border-b border-gray-200 dark:border-gray-700 z-10">
+                            <h2 className="text-xl md:text-3xl font-black text-slate-900 dark:text-gray-100 tracking-tight">New Request</h2>
                             <button
                                 onClick={() => setIsFormOpen(false)}
-                                className="p-2 hover:bg-slate-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-slate-400 dark:text-gray-500"
+                                className="p-1.5 md:p-2 hover:bg-slate-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-slate-400 dark:text-gray-500"
                             >
-                                <X size={24} />
+                                <X size={22} />
                             </button>
                         </div>
 
-                        <form className="space-y-5 md:space-y-6" onSubmit={handleSubmit}>
+                        <form className="space-y-3 md:space-y-6" onSubmit={handleSubmit}>
                             <div className="space-y-2">
                                 <label className="text-xs md:text-sm font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wide">Title</label>
                                 <input
@@ -382,6 +515,49 @@ const Complaints = () => {
                                 ></textarea>
                             </div>
 
+                            {/* Image Upload Section */}
+                            <div className="space-y-2">
+                                <label className="text-xs md:text-sm font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wide">📸 Attach Images (Optional, Max 5)</label>
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    multiple
+                                    accept="image/*"
+                                    onChange={handleImageSelect}
+                                    className="hidden"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="w-full p-3 md:p-4 border-2 border-dashed border-indigo-300 dark:border-indigo-600 rounded-xl md:rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 font-semibold hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors"
+                                >
+                                    Click to upload images or drag & drop
+                                </button>
+                                {imagePreview.length > 0 && (
+                                    <div className="grid grid-cols-3 gap-2 md:gap-3">
+                                        {imagePreview.map((preview, idx) => (
+                                            <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border-2 border-indigo-300 dark:border-indigo-600">
+                                                <img
+                                                    src={preview}
+                                                    alt={`Preview ${idx + 1}`}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveImage(idx)}
+                                                    className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-700 transition-colors text-sm font-bold"
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                <p className="text-xs text-slate-500 dark:text-gray-400">
+                                    {selectedImages.length}/5 images selected
+                                </p>
+                            </div>
+
                             <button
                                 type="submit"
                                 disabled={submitting}
@@ -397,11 +573,19 @@ const Complaints = () => {
                     </div>
                 </div>
             )}
+
+            {/* Image Lightbox */}
+            {lightboxImage && (
+                <ImageLightbox 
+                    imageUrl={lightboxImage} 
+                    onClose={() => setLightboxImage(null)} 
+                />
+            )}
         </div>
     );
 };
 
-const ComplaintCard = React.memo(({ complaint, onComplaintUpdate, onComplaintDelete }) => {
+const ComplaintCard = React.memo(({ complaint, onComplaintUpdate, onComplaintDelete, onImageClick }) => {
     const [replyText, setReplyText] = useState('');
     const [replying, setReplying] = useState(false);
     const [error, setError] = useState(null);
@@ -473,7 +657,7 @@ const ComplaintCard = React.memo(({ complaint, onComplaintUpdate, onComplaintDel
 
         // Send to server
         try {
-            const res = await api.post(`/api/complaints/${complaint._id}/user-reply`, { message: optimisticReply.message }, {
+            const res = await api.post(`/complaints/${complaint._id}/user-reply`, { message: optimisticReply.message }, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             // Update with server response (to get real _id and timestamps)
@@ -516,7 +700,7 @@ const ComplaintCard = React.memo(({ complaint, onComplaintUpdate, onComplaintDel
         setDeleting(true);
 
         try {
-            const res = await api.delete(`/api/complaints/${complaint._id}/reply/${replyId}`, {
+            const res = await api.delete(`/complaints/${complaint._id}/reply/${replyId}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             onComplaintUpdate(res.data);
@@ -537,7 +721,7 @@ const ComplaintCard = React.memo(({ complaint, onComplaintUpdate, onComplaintDel
 
         setDeletingComplaint(true);
         try {
-            await api.delete(`/api/complaints/${complaint._id}`, {
+            await api.delete(`/complaints/${complaint._id}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             onComplaintDelete?.(complaint._id);
@@ -596,6 +780,28 @@ const ComplaintCard = React.memo(({ complaint, onComplaintUpdate, onComplaintDel
                             {complaint.description}
                         </p>
                         <p className="text-xs text-slate-400 dark:text-gray-500 mt-2">Room {complaint.roomNumber} • {timeAgo(complaint.createdAt)}</p>
+                    </div>
+                )}
+
+                {/* Attached Images */}
+                {complaint.images && complaint.images.length > 0 && (
+                    <div className="space-y-2">
+                        <p className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-gray-300">📸 Attached Images:</p>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            {complaint.images.map((img, idx) => {
+                                // Handle both object format {mediaUrl, type, ...} and string URL (legacy)
+                                const imageUrl = typeof img === 'string' ? img : img.mediaUrl;
+                                return (
+                                    <ImageWithLoader
+                                        key={idx}
+                                        src={imageUrl}
+                                        alt={`Complaint image ${idx + 1}`}
+                                        className="aspect-square rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600 hover:shadow-lg transition-shadow"
+                                        onClick={() => onImageClick(imageUrl)}
+                                    />
+                                );
+                            })}
+                        </div>
                     </div>
                 )}
 
@@ -693,5 +899,103 @@ const ComplaintCard = React.memo(({ complaint, onComplaintUpdate, onComplaintDel
         </div>
     );
 });
+
+// Lightbox Modal for Images
+const ImageLightbox = ({ imageUrl, onClose }) => {
+    if (!imageUrl) return null;
+
+    return (
+        <AnimatePresence>
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 backdrop-blur-xl"
+                onClick={onClose}
+            >
+                <motion.div
+                    initial={{ scale: 0.9 }}
+                    animate={{ scale: 1 }}
+                    className="w-full max-w-5xl h-auto max-h-[95vh] flex items-center justify-center relative"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <button
+                        className="absolute top-2 right-2 text-white text-4xl font-thin hover:rotate-90 transition-transform bg-black/40 rounded-full px-3 py-1 z-50"
+                        onClick={onClose}
+                        aria-label="Close"
+                    >
+                        &times;
+                    </button>
+                    <button
+                        className="absolute bottom-4 right-4 text-white text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 rounded-full px-6 py-3 z-50 flex items-center gap-2 shadow-lg transition-all hover:scale-105"
+                        onClick={async () => {
+                            try {
+                                const response = await fetch(imageUrl);
+                                const blob = await response.blob();
+                                const blobUrl = window.URL.createObjectURL(blob);
+                                const link = document.createElement('a');
+                                link.href = blobUrl;
+                                link.download = 'complaint-image';
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                                window.URL.revokeObjectURL(blobUrl);
+                            } catch (err) {
+                                window.open(imageUrl, '_blank');
+                            }
+                        }}
+                        aria-label="Download"
+                    >
+                        <Download size={18} />
+                        Download
+                    </button>
+                    <img
+                        src={imageUrl}
+                        alt="Complaint"
+                        className="w-full h-full object-contain rounded-lg"
+                    />
+                </motion.div>
+            </motion.div>
+        </AnimatePresence>
+    );
+};
+
+// Image component with loading state
+const ImageWithLoader = ({ src, alt, className, onClick }) => {
+    const [isLoading, setIsLoading] = useState(true);
+    const [hasError, setHasError] = useState(false);
+
+    return (
+        <div
+            onClick={onClick}
+            className={`${className} cursor-pointer relative`}
+        >
+            {isLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 animate-pulse z-10">
+                    <div className="flex flex-col items-center gap-2">
+                        <div className="w-8 h-8 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">Loading...</span>
+                    </div>
+                </div>
+            )}
+            {hasError && (
+                <div className="absolute inset-0 flex items-center justify-center bg-red-50 dark:bg-red-900/20 z-10">
+                    <span className="text-xs text-red-600 dark:text-red-400 font-semibold">Failed to load</span>
+                </div>
+            )}
+            <img
+                src={src}
+                alt={alt}
+                className="w-full h-full object-cover hover:scale-110 transition-transform"
+                onLoad={() => setIsLoading(false)}
+                onError={() => {
+                    setIsLoading(false);
+                    setHasError(true);
+                }}
+                style={{ opacity: isLoading ? 0 : 1, transition: 'opacity 0.3s' }}
+            />
+        </div>
+    );
+};
 
 export default Complaints;

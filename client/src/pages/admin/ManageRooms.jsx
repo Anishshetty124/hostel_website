@@ -16,14 +16,14 @@ const ManageRooms = () => {
     const handleSave = async () => {
         setSaving(true);
         try {
-            await api.put(`/api/rooms/hostelrecords/${editRoomId}`, { ...editData, roomNumber: Number(editData.roomNumber) }, {
+            await api.put(`/rooms/hostelrecords/${editRoomId}`, { ...editData, roomNumber: Number(editData.roomNumber) }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setEditRoomId(null);
             setEditData({});
             setSuccess('Saved!');
             // Refresh rooms
-            const res = await api.get('/api/rooms/hostelrecords', {
+            const res = await api.get('/rooms/hostelrecords', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             // Sort by roomNumber (numeric sort)
@@ -54,7 +54,7 @@ const ManageRooms = () => {
             setLoading(true);
             setError(null);
             try {
-                const res = await api.get('/api/rooms/hostelrecords', {
+                const res = await api.get('/rooms/hostelrecords', {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 // Sort by roomNumber (numeric sort)
@@ -97,13 +97,13 @@ const ManageRooms = () => {
         setAddSuccess(null);
         setConfirmModal({ open: false, action: '', member: null, payload: null });
         try {
-            const res = await api.post('/api/rooms/hostelrecords', { ...confirmModal.payload, roomNumber: Number(confirmModal.payload.roomNumber) }, {
+            const res = await api.post('/rooms/hostelrecords', { ...confirmModal.payload, roomNumber: Number(confirmModal.payload.roomNumber) }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setAddSuccess('Member added!');
             setAddData({ roomNumber: '', fullName: '', firstName: '' });
             // Refresh rooms
-            const res2 = await api.get('/api/rooms/hostelrecords', {
+            const res2 = await api.get('/rooms/hostelrecords', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const sorted = [...res2.data].sort((a, b) => (a.roomNumber ?? 0) - (b.roomNumber ?? 0));
@@ -126,12 +126,12 @@ const ManageRooms = () => {
         setDeleteError(null);
         setConfirmModal({ open: false, action: '', member: null, payload: null });
         try {
-            await api.delete(`/api/rooms/hostelrecords/${id}`, {
+            await api.delete(`/rooms/hostelrecords/${id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setSuccess('Member deleted!');
             // Refresh rooms
-            const res = await api.get('/api/rooms/hostelrecords', {
+            const res = await api.get('/rooms/hostelrecords', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const sorted = [...res.data].sort((a, b) => (a.roomNumber ?? 0) - (b.roomNumber ?? 0));

@@ -24,7 +24,7 @@ const Feedback = () => {
         }
         setLoading(true);
         try {
-            await api.post('/api/feedback', { subject: subject.trim(), message: message.trim() }, {
+            await api.post('/feedback', { subject: subject.trim(), message: message.trim() }, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             setSuccess('Thanks! Your feedback has been sent.');

@@ -37,7 +37,7 @@ export const AuthProvider = ({ children }) => {
     // Accepts identifier (email or first name) per backend API
     const login = async (identifier, password) => {
         try {
-            const { data } = await api.post('/api/auth/login', { identifier, password });
+            const { data } = await api.post('/auth/login', { identifier, password });
             
             // Save login data
             localStorage.setItem('token', data.token);

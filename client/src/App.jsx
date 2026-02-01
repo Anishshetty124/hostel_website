@@ -125,14 +125,27 @@ const AppRoutes = () => {
 };
 
 function App() {
-  // Subscribe user to push notifications on login
+  // Request notification permission when app loads
   const { user, token } = useContext(AuthContext) || {};
+  
+  useEffect(() => {
+    // Request notification permission if not already granted or denied
+    if ('Notification' in window && Notification.permission === 'default') {
+      try {
+        Notification.requestPermission();
+      } catch (err) {
+        console.error('Notification permission request failed:', err);
+      }
+    }
+  }, []);
+
+  // Subscribe user to push notifications on login
   useEffect(() => {
     async function subscribe() {
       if (user && token) {
         try {
           const subscription = await subscribeUserToPush(PUBLIC_VAPID_KEY);
-          await fetch('/api/push/subscribe', {
+          await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/push/subscribe`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

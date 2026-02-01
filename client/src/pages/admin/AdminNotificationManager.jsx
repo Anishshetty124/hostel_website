@@ -9,7 +9,7 @@ export default function AdminNotificationManager() {
 
   useEffect(() => {
     // Fetch current creative notification status and schedule
-    api.get('/api/notifications/creative/settings')
+    api.get('/notifications/creative/settings')
       .then(res => {
         setEnabled(res.data.enabled);
         setSchedules(res.data.schedules || []);
@@ -20,7 +20,7 @@ export default function AdminNotificationManager() {
   const handleToggle = async () => {
     setLoading(true);
     try {
-      await api.post('/api/notifications/creative/settings', { enabled: !enabled });
+      await api.post('/notifications/creative/settings', { enabled: !enabled });
       setEnabled(!enabled);
       setStatus('Settings updated!');
     } catch {

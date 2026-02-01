@@ -26,7 +26,7 @@ const Gallery = () => {
 
     const loadMedia = async () => {
         try {
-            const res = await api.get('/api/gallery');
+            const res = await api.get('/gallery');
             setMedia(res.data || []);
         } catch (err) {
             setError('Failed to load media');
@@ -87,7 +87,7 @@ const Gallery = () => {
             form.append('title', newTitle || file.name);
             const categoryToUse = newCategory === 'Other' ? (customCategory || 'Hostel') : newCategory;
             form.append('category', categoryToUse);
-            await api.post('/api/gallery/upload', form, {
+            await api.post('/gallery/upload', form, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setNewTitle('');

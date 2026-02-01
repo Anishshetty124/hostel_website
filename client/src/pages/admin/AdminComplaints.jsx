@@ -3,6 +3,7 @@ import api from '../../utils/api';
 import { AuthContext } from '../../context/AuthContext';
 import { Search, CheckCircle2, AlertCircle, Clock, MessageCircle, Send, X } from 'lucide-react';
 import { ComplaintCardSkeleton, StatsCardsSkeleton } from '../../components/SkeletonLoaders';
+import { io } from 'socket.io-client';
 
 const statusOptions = ['Pending', 'In Progress', 'Resolved'];
 
@@ -13,7 +14,7 @@ const AdminComplaints = () => {
       if (!window.confirm('Are you sure you want to delete this complaint? This action cannot be undone.')) return;
       setUpdatingId(id);
       try {
-        await api.delete(`/api/complaints/${id}`, {
+        await api.delete(`/complaints/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setList((prev) => prev.filter((c) => c._id !== id));
@@ -46,7 +47,7 @@ const AdminComplaints = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get('/api/complaints/admin/all', {
+      const res = await api.get('/complaints/admin/all', {
         headers: { Authorization: `Bearer ${token}` },
         signal: abortControllerRef.current.signal
       });
@@ -71,6 +72,45 @@ const AdminComplaints = () => {
     };
   }, [fetchAll]);
 
+  // Socket.io connection for real-time updates
+  useEffect(() => {
+    const socketUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '');
+    const socket = io(socketUrl, {
+      transports: ['websocket', 'polling']
+    });
+
+    socket.on('connect', () => {
+      console.log('Admin socket connected');
+    });
+
+    // Listen for new complaints
+    socket.on('complaint:created', (newComplaint) => {
+      setList((prev) => [newComplaint, ...prev]);
+    });
+
+    // Listen for complaint updates (replies, status changes)
+    socket.on('complaint:updated', (updatedComplaint) => {
+      setList((prev) =>
+        prev.map((c) =>
+          c._id === updatedComplaint._id ? updatedComplaint : c
+        )
+      );
+    });
+
+    // Listen for complaint deletions
+    socket.on('complaint:deleted', (deletedId) => {
+      setList((prev) => prev.filter((c) => c._id !== deletedId));
+    });
+
+    socket.on('disconnect', () => {
+      console.log('Admin socket disconnected');
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
   const filtered = useMemo(() => {
     let data = list;
     if (statusFilter !== 'all') {
@@ -92,7 +132,7 @@ const AdminComplaints = () => {
     if (!token) return;
     setUpdatingId(id);
     try {
-      const res = await api.patch(`/api/complaints/${id}/status`, { status }, {
+      const res = await api.patch(`/complaints/${id}/status`, { status }, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setList((prev) => prev.map((c) => (c._id === id ? res.data : c)));
@@ -107,7 +147,7 @@ const AdminComplaints = () => {
     if (!token || !replyText.trim()) return;
     setUpdatingId(id);
     try {
-      const res = await api.post(`/api/complaints/${id}/reply`, { message: replyText.trim() }, {
+      const res = await api.post(`/complaints/${id}/reply`, { message: replyText.trim() }, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setList((prev) => prev.map((c) => (c._id === id ? res.data : c)));
@@ -202,6 +242,20 @@ const AdminComplaints = () => {
                       <span className="px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">{timeAgo(c.createdAt)}</span>
                     </div>
                     <p className="text-sm text-slate-600 dark:text-gray-300 mb-3">{c.description}</p>
+                    {c.images?.length > 0 && (
+                      <div className="mt-3 mb-3">
+                        <p className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-widest mb-2">📷 Images ({c.images.length})</p>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                          {c.images.map((img, idx) => {
+                            // Handle both object format {mediaUrl, type, ...} and string URL (legacy)
+                            const imageUrl = typeof img === 'string' ? img : img.mediaUrl;
+                            return (
+                              <AdminImageWithLoader key={idx} src={imageUrl} alt={`Complaint image ${idx + 1}`} />
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                     {c.replies?.length > 0 && (
                       <div className="mt-3 space-y-2">
                         {c.replies.map((r, idx) => (
@@ -224,10 +278,10 @@ const AdminComplaints = () => {
                         value={c.status}
                         onChange={(e) => updateStatus(c._id, e.target.value)}
                         disabled={updatingId === c._id}
-                        className="w-full bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-gray-100"
+                        className="w-full bg-white dark:bg-gray-700 border border-slate-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-gray-100"
                       >
                         {statusOptions.map((s) => (
-                          <option key={s}>{s}</option>
+                          <option key={s} className="bg-white text-slate-900">{s}</option>
                         ))}
                       </select>
                     </div>
@@ -316,6 +370,39 @@ const timeAgo = (date) => {
   if (months < 12) return `${months}mo ago`;
   const years = Math.floor(days / 365);
   return `${years}y ago`;
+};
+
+// Image component with loading state for admin
+const AdminImageWithLoader = ({ src, alt }) => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+
+  return (
+    <a href={src} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-lg border border-slate-200 dark:border-gray-700 hover:shadow-md transition-shadow relative">
+      {isLoading && (
+        <div className="absolute inset-0 w-full h-20 flex flex-col items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 animate-pulse z-10">
+          <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-[9px] text-gray-600 dark:text-gray-400 font-medium mt-1">Loading...</span>
+        </div>
+      )}
+      {hasError && (
+        <div className="absolute inset-0 w-full h-20 flex items-center justify-center bg-red-50 dark:bg-red-900/20 z-10">
+          <span className="text-[10px] text-red-600 dark:text-red-400 font-semibold">Failed</span>
+        </div>
+      )}
+      <img
+        src={src}
+        alt={alt}
+        className="w-full h-20 object-cover hover:scale-105 transition-transform"
+        onLoad={() => setIsLoading(false)}
+        onError={() => {
+          setIsLoading(false);
+          setHasError(true);
+        }}
+        style={{ opacity: isLoading ? 0 : 1, transition: 'opacity 0.3s' }}
+      />
+    </a>
+  );
 };
 
 export default AdminComplaints;

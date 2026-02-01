@@ -42,7 +42,7 @@ const FoodMenu = () => {
             setLoading(true);
             setError(null);
             try {
-                const res = await api.get('/api/food/today', { headers });
+                const res = await api.get('/food/today', { headers });
                 if (!isMounted) return;
                 if (res.data && res.data.day && res.data.meals) {
                     setWeeklyMenu({ [res.data.day]: res.data.meals });
@@ -61,7 +61,7 @@ const FoodMenu = () => {
         setTimeout(() => {
             allDays.forEach(day => {
                 if (day === todayName) return;
-                api.get(`/api/food/${day}`, { headers })
+                api.get(`/food/${day}`, { headers })
                     .then(res => {
                         if (res.data && res.data.day && res.data.meals && isMounted) {
                             setWeeklyMenu(prev => ({ ...prev, [res.data.day]: res.data.meals }));

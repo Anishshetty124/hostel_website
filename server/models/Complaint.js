@@ -8,6 +8,13 @@ const complaintSchema = new mongoose.Schema({
     category: { type: String, enum: ['Electrical', 'Plumbing', 'Cleaning', 'Other'], default: 'Other' },
     urgency: { type: String, enum: ['Low', 'Medium', 'High'], default: 'Medium' },
     status: { type: String, enum: ['Pending', 'In Progress', 'Resolved'], default: 'Pending' },
+    images: [{
+        mediaUrl: { type: String }, // URL from ImageKit or CDN
+        type: { type: String, enum: ['image', 'video'], default: 'image' },
+        provider: { type: String, enum: ['imagekit', 'custom'], default: 'imagekit' },
+        fileId: { type: String }, // ImageKit file ID for management
+        uploadedAt: { type: Date, default: Date.now }
+    }],
     replies: [
         {
             message: { type: String, required: true, trim: true },

@@ -22,7 +22,7 @@ const AdminFoodMenu = () => {
       setLoading(true);
       try {
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await api.get('/api/food', { headers });
+        const res = await api.get('/food', { headers });
         // Convert array to object by day, using nested meals structure
         const weekObj = {};
         (res.data || []).forEach(dayMenu => {
@@ -79,7 +79,7 @@ const AdminFoodMenu = () => {
     setSubmitting(true);
     try {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      await api.post('/api/food/admin/update', {
+      await api.post('/food/admin/update', {
         permanent: true,
         day: selectedDay,
         menu: menuData[selectedDay],

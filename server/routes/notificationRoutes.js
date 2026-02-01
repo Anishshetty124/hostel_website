@@ -92,11 +92,16 @@ router.post('/send', protect, admin, async (req, res) => {
     if (!title || !message) return res.status(400).json({ message: 'Title and message are required.' });
     const senderId = req.user?._id;
     const senderName = req.user ? `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() : 'Admin';
+    const io = req.app.get('io');
     if (type === 'public') {
       const notif = new Notification({ title, message, isPublic: true, sender: senderId, senderName, type: 'notice' });
       await notif.save();
       // Send push to all
       sendPushToAll({ title, body: message, url: '/notifications', type: 'notice' });
+      // Emit socket event
+      if (io) {
+        io.emit('notification:created', notif);
+      }
       return res.status(201).json({ success: true, notification: notif });
     } else if (type === 'private') {
       if (!recipient) return res.status(400).json({ message: 'Recipient required for private message.' });
@@ -106,12 +111,83 @@ router.post('/send', protect, admin, async (req, res) => {
       await notif.save();
       // Send push to user
       sendPushToUser(user._id, { title, body: message, url: '/notifications', type: 'personal' });
+      // Emit socket event
+      if (io) {
+        io.emit('notification:created', notif);
+      }
       return res.status(201).json({ success: true, notification: notif });
     } else {
       return res.status(400).json({ message: 'Invalid type.' });
     }
   } catch (err) {
     res.status(500).json({ message: err.message || 'Failed to send notification' });
+  }
+});
+
+// Admin: Get all notifications sent by admin (for editing/managing)
+router.get('/admin/sent', protect, admin, async (req, res) => {
+  try {
+    const notifications = await Notification.find({ sender: req.user._id })
+      .populate('user', 'firstName lastName email')
+      .sort({ createdAt: -1 });
+    res.json(notifications);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch sent notifications' });
+  }
+});
+
+// Admin: Edit a notification (only sender can edit)
+router.put('/:id', protect, admin, async (req, res) => {
+  try {
+    const { title, message } = req.body;
+    if (!title || !message) return res.status(400).json({ message: 'Title and message are required.' });
+    
+    const notif = await Notification.findById(req.params.id);
+    if (!notif) return res.status(404).json({ message: 'Notification not found' });
+    
+    // Only the sender can edit
+    if (notif.sender?.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to edit this notification' });
+    }
+    
+    notif.title = title;
+    notif.message = message;
+    await notif.save();
+    
+    // Emit socket event
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('notification:updated', notif);
+    }
+    
+    res.json({ success: true, notification: notif });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Failed to update notification' });
+  }
+});
+
+// Admin: Delete a notification (only sender can delete)
+router.delete('/:id/admin', protect, admin, async (req, res) => {
+  try {
+    const notif = await Notification.findById(req.params.id);
+    if (!notif) return res.status(404).json({ message: 'Notification not found' });
+    
+    // Only the sender can delete
+    if (notif.sender?.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to delete this notification' });
+    }
+    
+    await notif.deleteOne();
+    
+    // Emit socket event
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('notification:deleted', req.params.id);
+    }
+    
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Failed to delete notification' });
   }
 });
 

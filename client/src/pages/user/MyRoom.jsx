@@ -21,7 +21,7 @@ const MyRoom = () => {
             setError(null);
             try {
                 // Fetch all members in the same room (user endpoint)
-                const res = await api.get('/api/rooms/my-room-members', {
+                const res = await api.get('/rooms/my-room-members', {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 setMembers(res.data || []);

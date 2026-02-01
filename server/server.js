@@ -4,6 +4,8 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
+const http = require('http');
+const { Server } = require('socket.io');
 
 // --- Import Routes ---
 const authRoutes = require('./routes/authRoutes');
@@ -23,6 +25,39 @@ const creativeNotificationSettings = require('./routes/creativeNotificationSetti
 require('./utils/notificationCron');
 
 const app = express();
+const server = http.createServer(app);
+
+// --- Socket.io Setup ---
+const io = new Server(server, {
+    cors: {
+        origin: function (origin, callback) {
+            const envOrigins = process.env.CLIENT_URL
+                ? process.env.CLIENT_URL.split(',').map(o => o.trim())
+                : [];
+            const allowedOrigins = [
+                ...envOrigins,
+                'http://localhost:5173',
+                'http://localhost:3000'
+            ];
+            if (!origin || allowedOrigins.includes(origin)) {
+                return callback(null, true);
+            }
+            return callback(new Error('Not allowed by CORS'));
+        },
+        credentials: true
+    }
+});
+
+// Make io available to routes
+app.set('io', io);
+
+io.on('connection', (socket) => {
+    console.log('User connected:', socket.id);
+    
+    socket.on('disconnect', () => {
+        console.log('User disconnected:', socket.id);
+    });
+});
 
 // --- Middlewares ---
 app.use(express.json()); // Allow JSON data
@@ -81,4 +116,4 @@ app.use((err, req, res, next) => {
 
 // --- Start Server ---
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
