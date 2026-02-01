@@ -44,10 +44,10 @@ mealTimes.forEach(({ meal, cron: cronTime }) => {
       let items = menuDoc && menuDoc[meal] ? menuDoc[meal].join(', ') : 'Check the mess for today\'s menu!';
       const message = creativeFoodMessage(meal, items);
       // Save notification in DB
-      const notif = new Notification({ title: `${meal.charAt(0).toUpperCase() + meal.slice(1)} Menu`, message, isPublic: true, type: 'notice' });
+      const notif = new Notification({ title: `${meal.charAt(0).toUpperCase() + meal.slice(1)} Menu`, message, isPublic: true, type: 'food' });
       await notif.save();
       // Send push to all
-      sendPushToAll({ title: notif.title, body: message, url: '/notifications' });
+      sendPushToAll({ title: notif.title, body: message, url: '/user/food-menu', type: 'food' });
       console.log(`[CRON] Sent ${meal} notification to all users.`);
     } catch (err) {
       console.error(`[CRON] Failed to send ${meal} notification:`, err.message);
@@ -61,7 +61,7 @@ cron.schedule('0 18 * * *', async () => {
     const message = creativeGameMessage();
     const notif = new Notification({ title: 'Game Time!', message, isPublic: true, type: 'notice' });
     await notif.save();
-    sendPushToAll({ title: notif.title, body: message, url: '/notifications' });
+    sendPushToAll({ title: notif.title, body: message, url: '/user/game-arena', type: 'notice' });
     console.log('[CRON] Sent game notification to all users.');
   } catch (err) {
     console.error('[CRON] Failed to send game notification:', err.message);

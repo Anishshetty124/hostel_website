@@ -503,7 +503,7 @@ const Gallery = () => {
                                 </h2>
                                 {/* Removed header Show More; moved to 4th tile overlay */}
                             </div>
-                            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-4 md:gap-6">
+                            <div className="grid grid-cols-2 gap-2 sm:gap-4 md:gap-6">
                                 <AnimatePresence>
                                     {photos
                                         .slice(0, activeFilter === 'All' ? PREVIEW_ITEMS : displayedPhotos)
@@ -518,7 +518,7 @@ const Gallery = () => {
                                                         initial={{ opacity: 0, scale: 0.8 }}
                                                         animate={{ opacity: 1, scale: 1 }}
                                                         exit={{ opacity: 0, scale: 0.9 }}
-                                                        className="bg-white dark:bg-gray-800 p-3 shadow-sm border border-gray-100 dark:border-gray-700 rounded-3xl relative"
+                                                        className="bg-white dark:bg-gray-800 p-1.5 shadow-sm border border-gray-100 dark:border-gray-700 rounded-3xl relative"
                                                     >
                                                         <div className="overflow-hidden rounded-2xl bg-gray-50 dark:bg-gray-700 relative aspect-[4/3]">
                                                             <img
@@ -556,7 +556,7 @@ const Gallery = () => {
                                                     exit={{ opacity: 0, scale: 0.9 }}
                                                     whileHover={{ y: -8 }}
                                                     onClick={() => setSelectedId(photo._id)}
-                                                    className="bg-white dark:bg-gray-800 p-3 shadow-sm border border-gray-100 dark:border-gray-700 rounded-3xl cursor-pointer hover:shadow-2xl transition-all relative"
+                                                    className="bg-white dark:bg-gray-800 p-1.5 shadow-sm border border-gray-100 dark:border-gray-700 rounded-3xl cursor-pointer hover:shadow-2xl transition-all relative"
                                                 >
                                                     {deleting === photo._id && (
                                                         <div className="absolute inset-0 bg-black/50 rounded-3xl flex items-center justify-center z-10">
@@ -565,7 +565,7 @@ const Gallery = () => {
                                                             </div>
                                                         </div>
                                                     )}
-                                                    <div className="overflow-hidden rounded-2xl bg-gray-50 dark:bg-gray-700 relative aspect-[4/3]">
+                                                    <div className="overflow-hidden rounded-2xl bg-gray-50 dark:bg-gray-700 relative aspect-[4/3] group">
                                                         <img
                                                             src={photo.mediaUrl || photo.imageUrl}
                                                             alt={photo.title || 'Hostel'}
@@ -581,6 +581,33 @@ const Gallery = () => {
                                                                 }
                                                             }}
                                                         />
+                                                        {/* Download Button Overlay */}
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                const url = photo.mediaUrl || photo.imageUrl;
+                                                                const filename = photo.title || 'hostel-image';
+                                                                fetch(url)
+                                                                    .then(res => res.blob())
+                                                                    .then(blob => {
+                                                                        const blobUrl = window.URL.createObjectURL(blob);
+                                                                        const link = document.createElement('a');
+                                                                        link.href = blobUrl;
+                                                                        link.download = filename;
+                                                                        document.body.appendChild(link);
+                                                                        link.click();
+                                                                        document.body.removeChild(link);
+                                                                        window.URL.revokeObjectURL(blobUrl);
+                                                                    })
+                                                                    .catch(() => window.open(url, '_blank'));
+                                                            }}
+                                                            className="absolute top-2 right-2 bg-black/70 hover:bg-indigo-600 text-white p-2 rounded-full shadow-lg transition-all duration-300 z-10"
+                                                            title="Download image"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                                                            </svg>
+                                                        </button>
                                                     </div>
                                                     <div className="pt-4 pb-2 px-2 flex items-center justify-between gap-2 min-w-0">
                                                         <p className="font-bold text-gray-800 dark:text-gray-200 text-sm flex-1 truncate">{photo.title || 'Hostel'}</p>
@@ -602,19 +629,34 @@ const Gallery = () => {
                                             );
                                         })}
                                 </AnimatePresence>
-                                <EmptyPhotoBox label="Add more memories" onClick={openUploadSection} />
+                                {activeFilter !== 'All' && (
+                                    <div className="hidden md:block">
+                                        <EmptyPhotoBox label="Add more memories" onClick={openUploadSection} />
+                                    </div>
+                                )}
                             </div>
-                            {activeFilter === 'Photos' && displayedPhotos < photos.length && hasMore && (
+                            {activeFilter === 'Photos' && displayedPhotos < photos.length && (
                                 <motion.button
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    onClick={() => loadMedia()}
+                                    onClick={() => {
+                                        if (displayedPhotos >= photos.length - ITEMS_PER_PAGE && hasMore) {
+                                            loadMedia();
+                                        } else {
+                                            setDisplayedPhotos(prev => prev + ITEMS_PER_PAGE);
+                                        }
+                                    }}
                                     className="mt-8 mx-auto flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transition-all"
                                     disabled={mediaLoading}
                                 >
                                     <span>{mediaLoading ? 'Loading…' : 'Show More'}</span>
                                     <ChevronDown size={20} />
                                 </motion.button>
+                            )}
+                            {activeFilter !== 'All' && (
+                                <div className="mt-6 block md:hidden">
+                                    <EmptyPhotoBox label="Add more memories" onClick={openUploadSection} />
+                                </div>
                             )}
                         </section>
                     )}
@@ -628,7 +670,7 @@ const Gallery = () => {
                                     {activeFilter}
                                 </h2>
                             </div>
-                            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-4 md:gap-6">
+                            <div className="grid grid-cols-2 gap-2 sm:gap-4 md:gap-6">
                                 <AnimatePresence>
                                     {all
                                         .filter(item => (item.type === 'image') || !!item.imageUrl)
@@ -644,7 +686,7 @@ const Gallery = () => {
                                                         initial={{ opacity: 0, scale: 0.8 }}
                                                         animate={{ opacity: 1, scale: 1 }}
                                                         exit={{ opacity: 0, scale: 0.9 }}
-                                                        className="bg-white dark:bg-gray-800 p-3 shadow-sm border border-gray-100 dark:border-gray-700 rounded-3xl relative"
+                                                        className="bg-white dark:bg-gray-800 p-1.5 shadow-sm border border-gray-100 dark:border-gray-700 rounded-3xl relative"
                                                     >
                                                         <div className="overflow-hidden rounded-2xl bg-gray-50 dark:bg-gray-700 relative aspect-[4/3]">
                                                             <img
@@ -675,7 +717,7 @@ const Gallery = () => {
                                                     exit={{ opacity: 0, scale: 0.9 }}
                                                     whileHover={{ y: -8 }}
                                                     onClick={() => setSelectedId(photo._id)}
-                                                    className="bg-white dark:bg-gray-800 p-3 shadow-sm border border-gray-100 dark:border-gray-700 rounded-3xl cursor-pointer hover:shadow-2xl transition-all relative"
+                                                    className="bg-white dark:bg-gray-800 p-1.5 shadow-sm border border-gray-100 dark:border-gray-700 rounded-3xl cursor-pointer hover:shadow-2xl transition-all relative"
                                                 >
                                                     {deleting === photo._id && (
                                                         <div className="absolute inset-0 bg-black/50 rounded-3xl flex items-center justify-center z-10">
@@ -684,13 +726,40 @@ const Gallery = () => {
                                                             </div>
                                                         </div>
                                                     )}
-                                                    <div className="overflow-hidden rounded-2xl bg-gray-50 dark:bg-gray-700 relative aspect-[4/3]">
+                                                    <div className="overflow-hidden rounded-2xl bg-gray-50 dark:bg-gray-700 relative aspect-[4/3] group">
                                                         <img
                                                             src={photo.mediaUrl || photo.imageUrl}
                                                             alt={photo.title || activeFilter}
                                                             className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 hover:scale-110"
                                                             onError={e => { e.target.style.display = 'none'; }}
                                                         />
+                                                        {/* Download Button Overlay */}
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                const url = photo.mediaUrl || photo.imageUrl;
+                                                                const filename = photo.title || 'hostel-image';
+                                                                fetch(url)
+                                                                    .then(res => res.blob())
+                                                                    .then(blob => {
+                                                                        const blobUrl = window.URL.createObjectURL(blob);
+                                                                        const link = document.createElement('a');
+                                                                        link.href = blobUrl;
+                                                                        link.download = filename;
+                                                                        document.body.appendChild(link);
+                                                                        link.click();
+                                                                        document.body.removeChild(link);
+                                                                        window.URL.revokeObjectURL(blobUrl);
+                                                                    })
+                                                                    .catch(() => window.open(url, '_blank'));
+                                                            }}
+                                                            className="absolute top-2 right-2 bg-black/70 hover:bg-indigo-600 text-white p-2 rounded-full shadow-lg transition-all duration-300 z-10"
+                                                            title="Download image"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                                                            </svg>
+                                                        </button>
                                                     </div>
                                                     <div className="pt-4 pb-2 px-2 flex items-center justify-between gap-2 min-w-0">
                                                         <p className="font-bold text-gray-800 dark:text-gray-200 text-sm flex-1 truncate">{photo.title || activeFilter}</p>
@@ -790,6 +859,11 @@ const Gallery = () => {
                                     ))}
                                 </AnimatePresence>
                             </div>
+                            {activeFilter === 'All' && (
+                                <div className="mt-6">
+                                    <EmptyPhotoBox label="Add more memories" onClick={openUploadSection} />
+                                </div>
+                            )}
                         </section>
                     )}
 
@@ -803,7 +877,7 @@ const Gallery = () => {
                             >
                                 <motion.div
                                     initial={{ scale: 0.9 }} animate={{ scale: 1 }}
-                                    className="w-full max-w-xs xs:max-w-sm sm:max-w-lg md:max-w-2xl lg:max-w-4xl h-auto max-h-[90vh] flex items-center justify-center relative"
+                                    className="w-full max-w-xs xs:max-w-sm sm:max-w-lg md:max-w-3xl lg:max-w-5xl xl:max-w-6xl h-auto max-h-[95vh] flex items-center justify-center relative"
                                     onClick={(e) => e.stopPropagation()}
                                 >
                                     <button 
@@ -814,18 +888,47 @@ const Gallery = () => {
                                     >
                                         &times;
                                     </button>
+                                    {/* Download Button */}
+                                    <button 
+                                        className="absolute bottom-4 right-4 text-white text-sm sm:text-base font-semibold bg-indigo-600 hover:bg-indigo-700 rounded-full px-4 sm:px-6 py-2 sm:py-3 z-50 flex items-center gap-2 shadow-lg transition-all hover:scale-105" 
+                                        style={{ zIndex: 100, pointerEvents: 'auto' }}
+                                        onClick={async () => {
+                                            const url = selectedMedia?.mediaUrl || selectedMedia?.imageUrl;
+                                            const filename = selectedMedia?.title || 'hostel-image';
+                                            try {
+                                                const response = await fetch(url);
+                                                const blob = await response.blob();
+                                                const blobUrl = window.URL.createObjectURL(blob);
+                                                const link = document.createElement('a');
+                                                link.href = blobUrl;
+                                                link.download = filename;
+                                                document.body.appendChild(link);
+                                                link.click();
+                                                document.body.removeChild(link);
+                                                window.URL.revokeObjectURL(blobUrl);
+                                            } catch (err) {
+                                                // Fallback: open in new tab
+                                                window.open(url, '_blank');
+                                            }
+                                        }}
+                                        aria-label="Download"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 sm:w-5 sm:h-5">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                                        </svg>
+                                        <span className="hidden xs:inline">Download</span>
+                                    </button>
                                     {selectedMedia?.type === 'image' || selectedMedia?.imageUrl ? (
-                                        <img src={selectedMedia?.mediaUrl || selectedMedia?.imageUrl} className="max-h-[70vh] w-auto max-w-full rounded-2xl shadow-2xl object-contain" alt="" onError={e => { e.target.style.display = 'none'; }} />
+                                        <img src={selectedMedia?.mediaUrl || selectedMedia?.imageUrl} className="max-h-[85vh] w-auto max-w-full rounded-2xl shadow-2xl object-contain" alt="" onError={e => { e.target.style.display = 'none'; }} />
                                     ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-black rounded-3xl overflow-hidden border border-white/10">
-                                            <video 
-                                                src={getOptimizedVideoUrl(selectedMedia?.mediaUrl)} 
-                                                poster={getPosterUrl(selectedMedia?.mediaUrl)}
-                                                controls 
-                                                loading="lazy"
-                                                className="w-full h-auto max-h-[70vh] object-contain" 
-                                            />
-                                        </div>
+                                        <video 
+                                            src={getOptimizedVideoUrl(selectedMedia?.mediaUrl)} 
+                                            poster={getPosterUrl(selectedMedia?.mediaUrl)}
+                                            controls 
+                                            loading="lazy"
+                                            className="max-w-full max-h-[85vh] rounded-2xl shadow-2xl"
+                                            style={{ minWidth: '80vw', minHeight: '60vh' }}
+                                        />
                                     )}
                                 </motion.div>
                             </motion.div>

@@ -96,7 +96,7 @@ router.post('/send', protect, admin, async (req, res) => {
       const notif = new Notification({ title, message, isPublic: true, sender: senderId, senderName, type: 'notice' });
       await notif.save();
       // Send push to all
-      sendPushToAll({ title, body: message, url: '/notifications' });
+      sendPushToAll({ title, body: message, url: '/notifications', type: 'notice' });
       return res.status(201).json({ success: true, notification: notif });
     } else if (type === 'private') {
       if (!recipient) return res.status(400).json({ message: 'Recipient required for private message.' });
@@ -105,7 +105,7 @@ router.post('/send', protect, admin, async (req, res) => {
       const notif = new Notification({ user: user._id, title, message, isPublic: false, sender: senderId, senderName, type: 'personal' });
       await notif.save();
       // Send push to user
-      sendPushToUser(user._id, { title, body: message, url: '/notifications' });
+      sendPushToUser(user._id, { title, body: message, url: '/notifications', type: 'personal' });
       return res.status(201).json({ success: true, notification: notif });
     } else {
       return res.status(400).json({ message: 'Invalid type.' });

@@ -22,7 +22,13 @@ self.addEventListener('push', function(event) {
     body: data.body || '',
     icon: '/logo192.png',
     badge: '/logo192.png',
-    data: data.url || '/' // URL to open on click
+    vibrate: [200, 100, 200],
+    requireInteraction: false,
+    tag: data.type || 'notification',
+    data: {
+      url: data.url || '/notifications',
+      type: data.type
+    }
   };
   event.waitUntil(
     self.registration.showNotification(title, options)
@@ -31,7 +37,20 @@ self.addEventListener('push', function(event) {
 
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
+  const urlToOpen = event.notification.data?.url || '/notifications';
   event.waitUntil(
-    clients.openWindow(event.notification.data || '/')
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
+      // Check if there's already a window open
+      for (let i = 0; i < clientList.length; i++) {
+        const client = clientList[i];
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          return client.focus().then(client => client.navigate(urlToOpen));
+        }
+      }
+      // If no window is open, open a new one
+      if (clients.openWindow) {
+        return clients.openWindow(urlToOpen);
+      }
+    })
   );
 });
