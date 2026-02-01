@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import io from 'socket.io-client';
+import { getSocket } from '../../utils/socket';
 import api from '../../utils/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { Edit2, Trash2 } from 'lucide-react';
@@ -51,10 +51,9 @@ const SendNotice = () => {
 
   // Socket.io listeners for real-time notification updates
   useEffect(() => {
-    const socket = io();
+    const socket = getSocket();
 
-    // Listen for new notifications created by any admin
-    socket.on('notification:created', (notification) => {
+    const handleCreated = (notification) => {
       setNotifications((prev) => {
         const exists = prev.some((n) => n._id === notification._id);
         if (!exists) {
@@ -62,28 +61,30 @@ const SendNotice = () => {
         }
         return prev;
       });
-    });
+    };
 
-    // Listen for updated notifications
-    socket.on('notification:updated', (updatedNotification) => {
+    const handleUpdated = (updatedNotification) => {
       setNotifications((prev) =>
         prev.map((n) =>
           n._id === updatedNotification._id ? updatedNotification : n
         )
       );
-    });
+    };
 
-    // Listen for deleted notifications
-    socket.on('notification:deleted', (notificationId) => {
+    const handleDeleted = (notificationId) => {
       setNotifications((prev) =>
         prev.filter((n) => n._id !== notificationId)
       );
-    });
+    };
+
+    socket.on('notification:created', handleCreated);
+    socket.on('notification:updated', handleUpdated);
+    socket.on('notification:deleted', handleDeleted);
 
     return () => {
-      socket.off('notification:created');
-      socket.off('notification:updated');
-      socket.off('notification:deleted');
+      socket.off('notification:created', handleCreated);
+      socket.off('notification:updated', handleUpdated);
+      socket.off('notification:deleted', handleDeleted);
     };
   }, []);
 

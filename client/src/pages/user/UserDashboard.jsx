@@ -7,6 +7,7 @@ const UserDashboard = () => {
   const { user } = useOutletContext();
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstallButton, setShowInstallButton] = useState(false);
+  const [isPwaInstalled, setIsPwaInstalled] = useState(false);
 
   useEffect(() => {
     const handler = (e) => {
@@ -18,6 +19,24 @@ const UserDashboard = () => {
     window.addEventListener('beforeinstallprompt', handler);
 
     return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  useEffect(() => {
+    const checkInstalled = () => {
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+      const isIosStandalone = window.navigator.standalone === true;
+      setIsPwaInstalled(isStandalone || isIosStandalone);
+    };
+
+    checkInstalled();
+    window.addEventListener('appinstalled', checkInstalled);
+    const mediaQuery = window.matchMedia('(display-mode: standalone)');
+    mediaQuery.addEventListener?.('change', checkInstalled);
+
+    return () => {
+      window.removeEventListener('appinstalled', checkInstalled);
+      mediaQuery.removeEventListener?.('change', checkInstalled);
+    };
   }, []);
 
   const handleInstallClick = async () => {
@@ -109,9 +128,11 @@ const UserDashboard = () => {
         </h1>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-2 relative z-10">
           <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
-            Welcome to your hostel dashboard. <span className="text-indigo-600 dark:text-indigo-400 font-semibold">Download our app by clicking "Add to Home Screen" & install for quick access.</span>
+            Welcome to your hostel dashboard.{!isPwaInstalled && (
+              <span className="text-indigo-600 dark:text-indigo-400 font-semibold"> Download our app by clicking "Add to Home Screen" & install for quick access.</span>
+            )}
           </p>
-          {showInstallButton && (
+          {showInstallButton && !isPwaInstalled && (
             <button
               onClick={handleInstallClick}
               className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-colors shadow-lg hover:shadow-xl whitespace-nowrap text-sm sm:text-base"

@@ -6,6 +6,7 @@ const helmet = require('helmet');
 const compression = require('compression');
 const http = require('http');
 const { Server } = require('socket.io');
+const rateLimit = require('express-rate-limit');
 
 // --- Import Routes ---
 const authRoutes = require('./routes/authRoutes');
@@ -63,6 +64,15 @@ io.on('connection', (socket) => {
 app.use(express.json()); // Allow JSON data
 app.use(helmet());       // Security headers
 app.use(compression());  // Gzip compression for speed
+
+// --- Rate Limiting (basic, in-memory) ---
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 300, // limit each IP to 300 requests per window
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+app.use('/api', apiLimiter);
 app.use(cors({
     origin: function (origin, callback) {
         // Allow multiple origins from env, plus localhost for dev

@@ -8,7 +8,7 @@ import {
 import { AuthContext } from '../../context/AuthContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { StatsCardsSkeleton, ComplaintCardSkeleton } from '../../components/SkeletonLoaders';
-import { io } from 'socket.io-client';
+import { getSocket } from '../../utils/socket';
 import { motion, AnimatePresence } from 'framer-motion';
  
 const categoryOptions = ['Electrical', 'Plumbing', 'Cleaning', 'Other'];
@@ -93,26 +93,21 @@ const Complaints = () => {
 
     // Socket.io connection for real-time updates
     useEffect(() => {
-        const socketUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '');
-        const socket = io(socketUrl, {
-            transports: ['websocket', 'polling']
-        });
+        const socket = getSocket();
 
-        socket.on('connect', () => {
+        const handleConnect = () => {
             console.log('Socket connected');
-        });
+        };
 
-        // Listen for new complaints
-        socket.on('complaint:created', (newComplaint) => {
+        const handleCreated = (newComplaint) => {
             setComplaints((prev) => {
                 const updated = [newComplaint, ...prev];
                 cacheRef.current = updated;
                 return updated;
             });
-        });
+        };
 
-        // Listen for complaint updates (replies, status changes)
-        socket.on('complaint:updated', (updatedComplaint) => {
+        const handleUpdated = (updatedComplaint) => {
             setComplaints((prev) => {
                 const updated = prev.map((c) =>
                     c._id === updatedComplaint._id ? updatedComplaint : c
@@ -120,23 +115,32 @@ const Complaints = () => {
                 cacheRef.current = updated;
                 return updated;
             });
-        });
+        };
 
-        // Listen for complaint deletions
-        socket.on('complaint:deleted', (deletedId) => {
+        const handleDeleted = (deletedId) => {
             setComplaints((prev) => {
                 const updated = prev.filter((c) => c._id !== deletedId);
                 cacheRef.current = updated;
                 return updated;
             });
-        });
+        };
 
-        socket.on('disconnect', () => {
+        const handleDisconnect = () => {
             console.log('Socket disconnected');
-        });
+        };
+
+        socket.on('connect', handleConnect);
+        socket.on('complaint:created', handleCreated);
+        socket.on('complaint:updated', handleUpdated);
+        socket.on('complaint:deleted', handleDeleted);
+        socket.on('disconnect', handleDisconnect);
 
         return () => {
-            socket.disconnect();
+            socket.off('connect', handleConnect);
+            socket.off('complaint:created', handleCreated);
+            socket.off('complaint:updated', handleUpdated);
+            socket.off('complaint:deleted', handleDeleted);
+            socket.off('disconnect', handleDisconnect);
         };
     }, []);
 

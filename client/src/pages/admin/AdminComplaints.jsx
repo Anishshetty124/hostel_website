@@ -3,7 +3,7 @@ import api from '../../utils/api';
 import { AuthContext } from '../../context/AuthContext';
 import { Search, CheckCircle2, AlertCircle, Clock, MessageCircle, Send, X } from 'lucide-react';
 import { ComplaintCardSkeleton, StatsCardsSkeleton } from '../../components/SkeletonLoaders';
-import { io } from 'socket.io-client';
+import { getSocket } from '../../utils/socket';
 
 const statusOptions = ['Pending', 'In Progress', 'Resolved'];
 
@@ -74,40 +74,44 @@ const AdminComplaints = () => {
 
   // Socket.io connection for real-time updates
   useEffect(() => {
-    const socketUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '');
-    const socket = io(socketUrl, {
-      transports: ['websocket', 'polling']
-    });
+    const socket = getSocket();
 
-    socket.on('connect', () => {
+    const handleConnect = () => {
       console.log('Admin socket connected');
-    });
+    };
 
-    // Listen for new complaints
-    socket.on('complaint:created', (newComplaint) => {
+    const handleCreated = (newComplaint) => {
       setList((prev) => [newComplaint, ...prev]);
-    });
+    };
 
-    // Listen for complaint updates (replies, status changes)
-    socket.on('complaint:updated', (updatedComplaint) => {
+    const handleUpdated = (updatedComplaint) => {
       setList((prev) =>
         prev.map((c) =>
           c._id === updatedComplaint._id ? updatedComplaint : c
         )
       );
-    });
+    };
 
-    // Listen for complaint deletions
-    socket.on('complaint:deleted', (deletedId) => {
+    const handleDeleted = (deletedId) => {
       setList((prev) => prev.filter((c) => c._id !== deletedId));
-    });
+    };
 
-    socket.on('disconnect', () => {
+    const handleDisconnect = () => {
       console.log('Admin socket disconnected');
-    });
+    };
+
+    socket.on('connect', handleConnect);
+    socket.on('complaint:created', handleCreated);
+    socket.on('complaint:updated', handleUpdated);
+    socket.on('complaint:deleted', handleDeleted);
+    socket.on('disconnect', handleDisconnect);
 
     return () => {
-      socket.disconnect();
+      socket.off('connect', handleConnect);
+      socket.off('complaint:created', handleCreated);
+      socket.off('complaint:updated', handleUpdated);
+      socket.off('complaint:deleted', handleDeleted);
+      socket.off('disconnect', handleDisconnect);
     };
   }, []);
 
