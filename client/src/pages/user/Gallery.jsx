@@ -277,6 +277,9 @@ const Gallery = () => {
         if (!window.confirm('Are you sure you want to delete this file? This action cannot be undone.')) {
             return;
         }
+        
+        const deletedItem = media.find(m => m._id === id);
+        
         // Remove from UI immediately
         setMedia(prev => prev.filter(item => item._id !== id));
         setError(null);
@@ -284,11 +287,28 @@ const Gallery = () => {
         setDeleting(id); // Set loading state (optional, for button state)
         try {
             await api.delete(`/gallery/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+            
+            // Clear cache after successful deletion
+            try {
+                localStorage.removeItem(`${CACHE_KEY}_All_page_1`);
+                localStorage.removeItem(`${CACHE_KEY}_Photos_page_1`);
+                localStorage.removeItem(`${CACHE_KEY}_Videos_page_1`);
+            } catch (err) {
+                // Cache clear failed silently
+            }
+            
             setSuccess('Deleted successfully');
             setTimeout(() => setSuccess(null), 2000);
         } catch (err) {
+            // Restore item to UI on error
+            if (deletedItem) {
+                setMedia(prev => [...prev, deletedItem]);
+            }
+            
             if (err.response?.status === 404) {
                 setError('File not found or already deleted.');
+                // Item was already deleted, keep it removed from UI
+                setMedia(prev => prev.filter(item => item._id !== id));
             } else {
                 setError(err.response?.data?.message || 'Delete failed');
             }
