@@ -12,20 +12,29 @@ const imagekit = new ImageKit({
 // @route   GET /api/gallery
 const getGallery = async (req, res) => {
     try {
-    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
-    const limit = Math.max(parseInt(req.query.limit, 10) || 12, 1);
-    const skip = (page - 1) * limit;
-    const cacheKey = `gallery:page:${page}:limit:${limit}`;
+      const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+      const limit = Math.max(parseInt(req.query.limit, 10) || 12, 1);
+      const skip = (page - 1) * limit;
+      const type = req.query.type;
+      const category = req.query.category;
+      const cacheKey = `gallery:page:${page}:limit:${limit}:type:${type || 'all'}:category:${category || 'all'}`;
     if (isRedisReady()) {
       const cached = await redis.get(cacheKey);
       if (cached) {
         return res.json(JSON.parse(cached));
       }
     }
-    const items = await Gallery.find()
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
+      const filter = {};
+      if (type) {
+        filter.type = type;
+      }
+      if (category) {
+        filter.category = category;
+      }
+      const items = await Gallery.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
         // Normalize legacy docs
         const normalized = items.map((i) => ({
             _id: i._id,

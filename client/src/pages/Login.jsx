@@ -1,7 +1,7 @@
 import { useState, useContext, useRef } from "react";
 import { toast } from 'react-hot-toast';
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import axios from "axios";
+import api from "../utils/api";
 import Logo from "../assets/logo.svg";
 import { AuthContext } from "../context/AuthContext";
 import { FormInputSkeleton } from "../components/SkeletonLoaders";
@@ -88,8 +88,13 @@ const Login = () => {
     setRoomStatus({ loading: true, error: null });
     setRoomMembers([]);
     try {
-      const res = await api.get(`/api/auth/room-members`, { params: { roomNumber: roomQuery.trim() } });
-      const members = res.data?.members || [];
+      const res = await api.get(`/auth/room-members`, { params: { roomNumber: roomQuery.trim() } });
+      let members = [];
+      if (Array.isArray(res.data)) {
+        members = res.data;
+      } else if (res.data && Array.isArray(res.data.members)) {
+        members = res.data.members;
+      }
       roomCacheRef.current[key] = members;
       setRoomMembers(members);
       setRoomStatus({ loading: false, error: null });

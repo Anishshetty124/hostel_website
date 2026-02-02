@@ -39,12 +39,22 @@ const Gallery = () => {
     const [hasMore, setHasMore] = useState(true);
     const [mediaLoading, setMediaLoading] = useState(false);
 
-    const loadMedia = useCallback(async (reset = false) => {
+    const loadMedia = useCallback(async (reset = false, filterOverride) => {
         setLoading(reset);
         setMediaLoading(!reset);
         setError(null);
         try {
-            const res = await api.get(`/gallery?page=${reset ? 1 : page}&limit=${ITEMS_PER_PAGE}`);
+            const filter = filterOverride || activeFilter;
+            const params = new URLSearchParams();
+            params.set('page', reset ? 1 : page);
+            // Load more items upfront for "All" view to ensure we have enough images
+            params.set('limit', filter === 'All' ? ITEMS_PER_PAGE * 2 : ITEMS_PER_PAGE);
+            if (filter === 'Photos') params.set('type', 'image');
+            if (filter === 'Videos') params.set('type', 'video');
+            if (filter !== 'All' && filter !== 'Photos' && filter !== 'Videos') {
+                params.set('category', filter);
+            }
+            const res = await api.get(`/gallery?${params.toString()}`);
             const newMedia = res.data || [];
             if (reset) {
                 setMedia(newMedia);
@@ -53,19 +63,22 @@ const Gallery = () => {
                 setMedia(prev => [...prev, ...newMedia]);
                 setPage(prev => prev + 1);
             }
-            setHasMore(newMedia.length === ITEMS_PER_PAGE);
+            setHasMore(newMedia.length === (filter === 'All' ? ITEMS_PER_PAGE * 2 : ITEMS_PER_PAGE));
         } catch (err) {
             setError('Failed to load gallery');
         } finally {
             setLoading(false);
             setMediaLoading(false);
         }
-    }, [page]);
+    }, [page, activeFilter]);
 
     useEffect(() => {
-        loadMedia(true);
+        setPage(1);
+        setHasMore(true);
+        setDisplayedPhotos(ITEMS_PER_PAGE);
+        loadMedia(true, activeFilter);
         // eslint-disable-next-line
-    }, []);
+    }, [activeFilter]);
 
     // Lock body scroll when lightbox is open
     useEffect(() => {
@@ -266,6 +279,7 @@ const Gallery = () => {
     };
 
     const { photos, videos, all } = getFilteredMedia();
+    const categoryImages = all.filter(item => (item.type === 'image') || !!item.imageUrl);
     const selectedMedia = media.find(m => m._id === selectedId);
 
     const EmptyPhotoBox = ({ label = 'Coming Soon', onClick }) => (
@@ -494,7 +508,7 @@ const Gallery = () => {
                         </div>
                     )}
                     {/* All Section with Show More */}
-                    {(activeFilter === 'All' || activeFilter === 'Photos') && photos.length > 0 && (
+                    {(activeFilter === 'All' || activeFilter === 'Photos') && (activeFilter === 'All' ? all.length > 0 : photos.length > 0) && (
                         <section className="mb-12">
                             <div className="flex items-center justify-between mb-8">
                                 <h2 className="text-sm font-black text-gray-400 uppercase tracking-[0.2em] flex items-center gap-2">
@@ -505,11 +519,14 @@ const Gallery = () => {
                             </div>
                             <div className="grid grid-cols-2 gap-2 sm:gap-4 md:gap-6">
                                 <AnimatePresence>
-                                    {photos
+                                    {(activeFilter === 'All' ? categoryImages : photos)
                                         .slice(0, activeFilter === 'All' ? PREVIEW_ITEMS : displayedPhotos)
                                         .map((photo, idx) => {
-                                            const isShowMoreTile = (activeFilter === 'All' && photos.length > PREVIEW_ITEMS && idx === PREVIEW_ITEMS - 1)
-                                                || (activeFilter === 'Photos' && photos.length > PREVIEW_ITEMS && displayedPhotos === PREVIEW_ITEMS && idx === PREVIEW_ITEMS - 1);
+                                            const displayItems = activeFilter === 'All' ? categoryImages : photos;
+                                            const itemsToShow = displayItems.slice(0, activeFilter === 'All' ? PREVIEW_ITEMS : displayedPhotos);
+                                            const lastIndex = itemsToShow.length - 1;
+                                            const isShowMoreTile = (activeFilter === 'All' && (categoryImages.length > PREVIEW_ITEMS || hasMore) && idx === lastIndex)
+                                                || (activeFilter === 'Photos' && photos.length > displayedPhotos && displayedPhotos === PREVIEW_ITEMS && idx === lastIndex);
                                             if (isShowMoreTile) {
                                                 return (
                                                     <motion.div
@@ -608,13 +625,14 @@ const Gallery = () => {
                                     </div>
                                 )}
                             </div>
-                            {activeFilter === 'Photos' && displayedPhotos < photos.length && (
+                            {activeFilter === 'Photos' && (displayedPhotos < photos.length || hasMore) && (
                                 <motion.button
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     onClick={() => {
                                         if (displayedPhotos >= photos.length - ITEMS_PER_PAGE && hasMore) {
                                             loadMedia();
+                                            setDisplayedPhotos(prev => prev + ITEMS_PER_PAGE);
                                         } else {
                                             setDisplayedPhotos(prev => prev + ITEMS_PER_PAGE);
                                         }
@@ -659,11 +677,10 @@ const Gallery = () => {
                             </div>
                             <div className="grid grid-cols-2 gap-2 sm:gap-4 md:gap-6">
                                 <AnimatePresence>
-                                    {all
-                                        .filter(item => (item.type === 'image') || !!item.imageUrl)
+                                    {categoryImages
                                         .slice(0, displayedPhotos)
-                                        .map((photo, idx, arr) => {
-                                            const totalImages = all.filter(item => (item.type === 'image') || !!item.imageUrl).length;
+                                        .map((photo, idx) => {
+                                            const totalImages = categoryImages.length;
                                             const isShowMoreTile = totalImages > PREVIEW_ITEMS && displayedPhotos === PREVIEW_ITEMS && idx === PREVIEW_ITEMS - 1;
                                             if (isShowMoreTile) {
                                                 return (
@@ -682,7 +699,14 @@ const Gallery = () => {
                                                                 className="absolute inset-0 w-full h-full object-cover opacity-60"
                                                             />
                                                             <button
-                                                                onClick={() => setDisplayedPhotos(ITEMS_PER_PAGE)}
+                                                                onClick={() => {
+                                                                    if (displayedPhotos >= totalImages - ITEMS_PER_PAGE && hasMore) {
+                                                                        loadMedia();
+                                                                        setDisplayedPhotos(prev => prev + ITEMS_PER_PAGE);
+                                                                    } else {
+                                                                        setDisplayedPhotos(prev => prev + ITEMS_PER_PAGE);
+                                                                    }
+                                                                }}
                                                                 className="absolute inset-0 flex items-center justify-center"
                                                                 aria-label="Show more"
                                                             >
@@ -742,11 +766,16 @@ const Gallery = () => {
                                         })}
                                 </AnimatePresence>
                             </div>
-                            {displayedPhotos < all.filter(item => (item.type === 'image') || !!item.imageUrl).length && hasMore && (
+                            {(displayedPhotos < categoryImages.length || hasMore) && (
                                 <motion.button
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    onClick={() => loadMedia()}
+                                    onClick={() => {
+                                        if (displayedPhotos >= categoryImages.length - ITEMS_PER_PAGE && hasMore) {
+                                            loadMedia();
+                                        }
+                                        setDisplayedPhotos(prev => prev + ITEMS_PER_PAGE);
+                                    }}
                                     className="mt-8 mx-auto flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transition-all"
                                     disabled={mediaLoading}
                                 >
@@ -778,9 +807,10 @@ const Gallery = () => {
                                 <span className="bg-purple-500 w-1.5 h-4 rounded-full"></span>
                                 {activeFilter === 'All' ? 'Reels' : 'Video Reels'}
                             </h2>
-                            <div className="flex overflow-x-auto gap-4 pb-4 snap-x snap-mandatory no-scrollbar">
-                                <AnimatePresence>
-                                    {videos.map((vid, idx) => (
+                            <div className="relative">
+                                <div className="flex overflow-x-auto gap-4 pb-6 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-purple-500 scrollbar-track-gray-700">
+                                    <AnimatePresence>
+                                        {videos.map((vid, idx) => (
                                         <motion.div
                                             key={vid._id + '-' + idx}
                                             layout
@@ -830,14 +860,16 @@ const Gallery = () => {
                                                 </div>
                                             </div>
                                         </motion.div>
-                                    ))}
-                                </AnimatePresence>
+                                        ))}
+                                    </AnimatePresence>
+                                </div>
                             </div>
                             {activeFilter === 'All' && (
                                 <div className="mt-6">
                                     <EmptyPhotoBox label="Add more memories" onClick={openUploadSection} />
                                 </div>
                             )}
+
                         </section>
                     )}
 

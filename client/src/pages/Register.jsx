@@ -88,7 +88,7 @@ const Register = () => {
     setRoomStatus({ loading: true, error: null });
     setRoomMembers([]);
     try {
-      const res = await api.get(`/api/auth/room-members`, { params: { roomNumber: query } });
+      const res = await api.get(`/auth/room-members`, { params: { roomNumber: query } });
       // Support both array and object response
       let members = [];
       if (Array.isArray(res.data)) {

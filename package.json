@@ -1,4 +1,22 @@
 {
+  "name": "hostel-management",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace=server\" \"npm run dev --workspace=client\"",
+    "build": "npm run build --workspace=client",
+    "start:server": "npm run start --workspace=server",
+    "start:client": "npm run preview --workspace=client",
+    "install:all": "npm install && npm install --workspace=client && npm install --workspace=server",
+    "clean": "rm -rf node_modules client/node_modules server/node_modules client/dist"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
   "dependencies": {
     "node-cron": "^4.2.1",
     "react-hot-toast": "^2.6.0",
