@@ -4,13 +4,15 @@ import api from '../../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, ChevronRight } from 'lucide-react';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { GalleryGridSkeleton } from '../../components/SkeletonLoaders';
 
 const tabs = ['All', 'Photos', 'Videos', 'Rooms', 'Mess', 'Events'];
 const ITEMS_PER_PAGE = 6;
 const PREVIEW_ITEMS = 4; // Items to show in "All" preview
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache duration
+const CACHE_KEY = 'gallery_cache';
 
 const Gallery = () => {
     const navigate = useNavigate();
@@ -31,6 +33,7 @@ const Gallery = () => {
     const [selectedFileName, setSelectedFileName] = useState('');
     const [showUploadSection, setShowUploadSection] = useState(false);
     const [displayedPhotos, setDisplayedPhotos] = useState(ITEMS_PER_PAGE); // Pagination for photos
+    const [displayedVideos, setDisplayedVideos] = useState(ITEMS_PER_PAGE); // Pagination for videos
     const [selectedFiles, setSelectedFiles] = useState([]); // Multiple file selection
     const [selectedFileHashes, setSelectedFileHashes] = useState([]); // Hashes for deduplication
 
@@ -39,12 +42,53 @@ const Gallery = () => {
     const [hasMore, setHasMore] = useState(true);
     const [mediaLoading, setMediaLoading] = useState(false);
 
+    // Cache utility functions
+    const getCachedMedia = useCallback((filterKey) => {
+        try {
+            const cached = localStorage.getItem(`${CACHE_KEY}_${filterKey}`);
+            if (!cached) return null;
+            const { data, timestamp } = JSON.parse(cached);
+            if (Date.now() - timestamp > CACHE_DURATION) {
+                localStorage.removeItem(`${CACHE_KEY}_${filterKey}`);
+                return null;
+            }
+            return data;
+        } catch (err) {
+            return null;
+        }
+    }, []);
+
+    const setCachedMedia = useCallback((filterKey, data) => {
+        try {
+            localStorage.setItem(`${CACHE_KEY}_${filterKey}`, JSON.stringify({
+                data,
+                timestamp: Date.now()
+            }));
+        } catch (err) {
+            // Cache failed silently
+        }
+    }, []);
+
     const loadMedia = useCallback(async (reset = false, filterOverride) => {
         setLoading(reset);
         setMediaLoading(!reset);
         setError(null);
         try {
             const filter = filterOverride || activeFilter;
+            const cacheKey = `${filter}_page_${reset ? 1 : page}`;
+
+            // Check cache first on reset
+            if (reset) {
+                const cached = getCachedMedia(cacheKey);
+                if (cached && cached.length > 0) {
+                    setMedia(cached);
+                    setLoading(false);
+                    setMediaLoading(false);
+                    setHasMore(cached.length === (filter === 'All' ? ITEMS_PER_PAGE * 2 : ITEMS_PER_PAGE));
+                    return;
+                }
+            }
+
             const params = new URLSearchParams();
             params.set('page', reset ? 1 : page);
             // Load more items upfront for "All" view to ensure we have enough images
@@ -56,6 +100,12 @@ const Gallery = () => {
             }
             const res = await api.get(`/gallery?${params.toString()}`);
             const newMedia = res.data || [];
+            
+            // Cache the result
+            if (reset) {
+                setCachedMedia(cacheKey, newMedia);
+            }
+            
             if (reset) {
                 setMedia(newMedia);
                 setPage(2);
@@ -70,7 +120,7 @@ const Gallery = () => {
             setLoading(false);
             setMediaLoading(false);
         }
-    }, [page, activeFilter]);
+    }, [page, activeFilter, getCachedMedia, setCachedMedia]);
 
     useEffect(() => {
         setPage(1);
@@ -249,6 +299,48 @@ const Gallery = () => {
     };
 
     // Likes/Dislikes removed
+
+    // Lazy Loading Image Component
+    const LazyImage = ({ src, alt, className, onError }) => {
+        const [imageSrc, setImageSrc] = useState(null);
+        const [isLoading, setIsLoading] = useState(true);
+        const imgRef = useRef(null);
+
+        useEffect(() => {
+            const observer = new IntersectionObserver(
+                entries => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            setImageSrc(src);
+                            observer.unobserve(entry.target);
+                        }
+                    });
+                },
+                { rootMargin: '50px' }
+            );
+
+            if (imgRef.current) {
+                observer.observe(imgRef.current);
+            }
+
+            return () => {
+                if (imgRef.current) {
+                    observer.unobserve(imgRef.current);
+                }
+            };
+        }, [src]);
+
+        return (
+            <img
+                ref={imgRef}
+                src={imageSrc}
+                alt={alt}
+                className={className}
+                onError={onError}
+                onLoad={() => setIsLoading(false)}
+            />
+        );
+    };
 
     const getFilteredMedia = () => {
         let filtered = media.filter((item) => {
@@ -527,18 +619,23 @@ const Gallery = () => {
                                             const lastIndex = itemsToShow.length - 1;
                                             const isShowMoreTile = (activeFilter === 'All' && (categoryImages.length > PREVIEW_ITEMS || hasMore) && idx === lastIndex)
                                                 || (activeFilter === 'Photos' && photos.length > displayedPhotos && displayedPhotos === PREVIEW_ITEMS && idx === lastIndex);
+                                            
+                                            // Reduce animation for items beyond initial load
+                                            const shouldAnimate = activeFilter === 'All' ? idx < PREVIEW_ITEMS : idx < ITEMS_PER_PAGE;
+                                            
                                             if (isShowMoreTile) {
                                                 return (
                                                     <motion.div
                                                         key={photo._id + '-' + idx}
-                                                        layout
-                                                        initial={{ opacity: 0, scale: 0.8 }}
-                                                        animate={{ opacity: 1, scale: 1 }}
-                                                        exit={{ opacity: 0, scale: 0.9 }}
+                                                        layout={shouldAnimate}
+                                                        initial={shouldAnimate ? { opacity: 0, scale: 0.8 } : false}
+                                                        animate={shouldAnimate ? { opacity: 1, scale: 1 } : false}
+                                                        exit={shouldAnimate ? { opacity: 0, scale: 0.9 } : false}
+                                                        transition={shouldAnimate ? { duration: 0.3 } : { duration: 0 }}
                                                         className="bg-white dark:bg-gray-800 p-1.5 shadow-sm border border-gray-100 dark:border-gray-700 rounded-3xl relative"
                                                     >
                                                         <div className="overflow-hidden rounded-2xl bg-gray-50 dark:bg-gray-700 relative aspect-[4/3]">
-                                                            <img
+                                                            <LazyImage
                                                                 src={photo.mediaUrl || photo.imageUrl}
                                                                 alt={photo.title || 'Show More'}
                                                                 className="absolute inset-0 w-full h-full object-cover opacity-60"
@@ -567,11 +664,12 @@ const Gallery = () => {
                                             return (
                                                 <motion.div
                                                     key={photo._id + '-' + idx}
-                                                    layout
-                                                    initial={{ opacity: 0, scale: 0.8 }}
-                                                    animate={{ opacity: 1, scale: 1 }}
-                                                    exit={{ opacity: 0, scale: 0.9 }}
-                                                    whileHover={{ y: -8 }}
+                                                    layout={shouldAnimate}
+                                                    initial={shouldAnimate ? { opacity: 0, scale: 0.8 } : false}
+                                                    animate={shouldAnimate ? { opacity: 1, scale: 1 } : false}
+                                                    exit={shouldAnimate ? { opacity: 0, scale: 0.9 } : false}
+                                                    transition={shouldAnimate ? { duration: 0.3 } : { duration: 0 }}
+                                                    whileHover={shouldAnimate ? { y: -8 } : {}}
                                                     onClick={() => setSelectedId(photo._id)}
                                                     className="bg-white dark:bg-gray-800 p-1.5 shadow-sm border border-gray-100 dark:border-gray-700 rounded-3xl cursor-pointer hover:shadow-2xl transition-all relative"
                                                 >
@@ -583,7 +681,7 @@ const Gallery = () => {
                                                         </div>
                                                     )}
                                                     <div className="overflow-hidden rounded-2xl bg-gray-50 dark:bg-gray-700 relative aspect-[4/3] group">
-                                                        <img
+                                                        <LazyImage
                                                             src={photo.mediaUrl || photo.imageUrl}
                                                             alt={photo.title || 'Hostel'}
                                                             className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 hover:scale-110"
@@ -806,20 +904,84 @@ const Gallery = () => {
                             <h2 className="text-sm font-black text-gray-400 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
                                 <span className="bg-purple-500 w-1.5 h-4 rounded-full"></span>
                                 {activeFilter === 'All' ? 'Reels' : 'Video Reels'}
+                                {activeFilter === 'All' && <ChevronRight size={16} className="text-gray-400 ml-auto" />}
                             </h2>
-                            <div className="relative">
-                                <div className="flex overflow-x-auto gap-4 pb-6 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-purple-500 scrollbar-track-gray-700">
+                            {activeFilter === 'All' ? (
+                                /* Horizontal scroll for "All" view */
+                                <div className="relative">
+                                    <div className="flex overflow-x-auto gap-4 pb-6 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-purple-500 scrollbar-track-gray-700">
+                                        <AnimatePresence>
+                                            {videos.slice(0, displayedVideos).map((vid, idx) => (
+                                            <motion.div
+                                                key={vid._id + '-' + idx}
+                                                layout
+                                                whileHover={{ scale: 1.02 }}
+                                                onClick={() => setSelectedId(vid._id)}
+                                                className="flex-shrink-0 w-[180px] h-[320px] md:w-[240px] md:h-[426px] rounded-3xl overflow-hidden shadow-2xl bg-black relative snap-center cursor-pointer group"
+                                            >
+                                                {deleting === vid._id && (
+                                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
+                                                        <div className="animate-spin">
+                                                            <div className="h-8 w-8 border-4 border-white border-t-transparent rounded-full"></div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                <video 
+                                                    src={getOptimizedVideoUrl(vid.mediaUrl)} 
+                                                    poster={getPosterUrl(vid.mediaUrl)}
+                                                    loading="lazy"
+                                                    className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" 
+                                                />
+
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent">
+                                                    <div className="absolute top-4 right-4">
+                                                        {token && String(vid.uploadedBy) === String(user?.id || user?._id) && (
+                                                            <button 
+                                                                onClick={(e) => { 
+                                                                    e.stopPropagation(); 
+                                                                    handleDelete(vid._id); 
+                                                                }}
+                                                                disabled={deleting === vid._id}
+                                                                className="text-red-400 text-xs font-bold hover:text-red-300 hover:underline bg-black/40 px-2 py-1 rounded-md disabled:opacity-50"
+                                                            >
+                                                                Delete
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    <div className="absolute bottom-4 left-4 right-4">
+                                                        <p className="text-white font-semibold text-sm line-clamp-2 drop-shadow-md">
+                                                            {vid.title}
+                                                        </p>
+                                                        <div className="mt-2 flex items-center gap-2">
+                                                            <div className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center">
+                                                                <span className="text-white text-[10px]">▶</span>
+                                                            </div>
+                                                            <span className="text-white/80 text-[10px] uppercase font-bold tracking-wider">Watch Reel</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </motion.div>
+                                            ))}
+                                        </AnimatePresence>
+                                    </div>
+                                </div>
+                            ) : (
+                                /* Grid with pagination for "Videos" view */
+                                <div className="grid grid-cols-2 gap-2 sm:gap-4 md:gap-6">
                                     <AnimatePresence>
-                                        {videos.map((vid, idx) => (
+                                        {videos.slice(0, displayedVideos).map((vid, idx) => (
                                         <motion.div
                                             key={vid._id + '-' + idx}
                                             layout
-                                            whileHover={{ scale: 1.02 }}
+                                            initial={{ opacity: 0, scale: 0.8 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            exit={{ opacity: 0, scale: 0.9 }}
+                                            whileHover={{ y: -8 }}
                                             onClick={() => setSelectedId(vid._id)}
-                                            className="flex-shrink-0 w-[180px] h-[320px] md:w-[240px] md:h-[426px] rounded-3xl overflow-hidden shadow-2xl bg-black relative snap-center cursor-pointer group"
+                                            className="bg-black rounded-3xl overflow-hidden shadow-2xl relative cursor-pointer hover:shadow-2xl transition-all aspect-[4/6]"
                                         >
                                             {deleting === vid._id && (
-                                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
+                                                <div className="absolute inset-0 bg-black/50 rounded-3xl flex items-center justify-center z-10">
                                                     <div className="animate-spin">
                                                         <div className="h-8 w-8 border-4 border-white border-t-transparent rounded-full"></div>
                                                     </div>
@@ -829,11 +991,10 @@ const Gallery = () => {
                                                 src={getOptimizedVideoUrl(vid.mediaUrl)} 
                                                 poster={getPosterUrl(vid.mediaUrl)}
                                                 loading="lazy"
-                                                className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" 
+                                                className="w-full h-full object-cover" 
                                             />
-
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent">
-                                                <div className="absolute top-4 right-4">
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col items-end justify-between p-2">
+                                                <div>
                                                     {token && String(vid.uploadedBy) === String(user?.id || user?._id) && (
                                                         <button 
                                                             onClick={(e) => { 
@@ -847,15 +1008,15 @@ const Gallery = () => {
                                                         </button>
                                                     )}
                                                 </div>
-                                                <div className="absolute bottom-4 left-4 right-4">
-                                                    <p className="text-white font-semibold text-sm line-clamp-2 drop-shadow-md">
+                                                <div className="w-full">
+                                                    <p className="text-white font-semibold text-xs line-clamp-2 drop-shadow-md">
                                                         {vid.title}
                                                     </p>
-                                                    <div className="mt-2 flex items-center gap-2">
-                                                        <div className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center">
-                                                            <span className="text-white text-[10px]">▶</span>
+                                                    <div className="mt-1 flex items-center gap-1">
+                                                        <div className="w-5 h-5 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center">
+                                                            <span className="text-white text-[8px]">▶</span>
                                                         </div>
-                                                        <span className="text-white/80 text-[10px] uppercase font-bold tracking-wider">Watch Reel</span>
+                                                        <span className="text-white/80 text-[8px] uppercase font-bold tracking-wider">Watch</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -863,7 +1024,40 @@ const Gallery = () => {
                                         ))}
                                     </AnimatePresence>
                                 </div>
-                            </div>
+                            )}
+                            {activeFilter === 'Videos' && (displayedVideos < videos.length || hasMore) && (
+                                <motion.button
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    onClick={() => {
+                                        if (displayedVideos >= videos.length - ITEMS_PER_PAGE && hasMore) {
+                                            loadMedia();
+                                            setDisplayedVideos(prev => prev + ITEMS_PER_PAGE);
+                                        } else {
+                                            setDisplayedVideos(prev => prev + ITEMS_PER_PAGE);
+                                        }
+                                    }}
+                                    className="mt-8 mx-auto flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transition-all"
+                                    disabled={mediaLoading}
+                                >
+                                    <span>{mediaLoading ? 'Loading…' : 'Show More'}</span>
+                                    <ChevronDown size={20} />
+                                </motion.button>
+                            )}
+                            {activeFilter === 'Videos' && displayedVideos > ITEMS_PER_PAGE && (
+                                <motion.button
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    onClick={() => {
+                                        setDisplayedVideos(ITEMS_PER_PAGE);
+                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                    }}
+                                    className="mt-4 mx-auto flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transition-all"
+                                >
+                                    <span>Show Less</span>
+                                    <ChevronUp size={20} />
+                                </motion.button>
+                            )}
                             {activeFilter === 'All' && (
                                 <div className="mt-6">
                                     <EmptyPhotoBox label="Add more memories" onClick={openUploadSection} />
