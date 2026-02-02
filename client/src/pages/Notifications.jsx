@@ -15,7 +15,7 @@ const Notifications = () => {
     setRemovingId(id);
     try {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      await api.delete(`/api/notifications/${id}`, { headers });
+      await api.delete(`/notifications/${id}`, { headers });
       setNotifications(notifications => notifications.filter(n => n._id !== id));
     } catch (err) {
       // Optionally show error

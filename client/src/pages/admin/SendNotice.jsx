@@ -121,7 +121,11 @@ const SendNotice = () => {
       setMessage('');
       setRecipient('');
       // Add to list
-      setNotifications(prev => [res.data.notification, ...prev]);
+      setNotifications(prev => {
+        const created = res.data?.notification;
+        if (!created || prev.some(n => n._id === created._id)) return prev;
+        return [created, ...prev];
+      });
     } catch (err) {
       setStatus('Failed to send notification.');
     } finally {
