@@ -8,7 +8,8 @@ const createRoom = async (req, res) => {
         const savedRoom = await newRoom.save();
         res.status(201).json(savedRoom);
     } catch (err) {
-        res.status(500).json(err);
+        console.error('[createRoom] Error:', err);
+        res.status(500).json({ message: err.message || 'Failed to create room' });
     }
 };
 
@@ -18,7 +19,8 @@ const getRooms = async (req, res) => {
         const rooms = await Room.find();
         res.status(200).json(rooms);
     } catch (err) {
-        res.status(500).json(err);
+        console.error('[getRooms] Error:', err);
+        res.status(500).json({ message: err.message || 'Failed to fetch rooms' });
     }
 };
 
@@ -30,19 +32,27 @@ const updateRoom = async (req, res) => {
             { $set: req.body }, 
             { new: true }
         );
+        if (!updatedRoom) {
+            return res.status(404).json({ message: 'Room not found' });
+        }
         res.status(200).json(updatedRoom);
     } catch (err) {
-        res.status(500).json(err);
+        console.error('[updateRoom] Error:', err);
+        res.status(500).json({ message: err.message || 'Failed to update room' });
     }
 };
 
 // 4. Delete Room
 const deleteRoom = async (req, res) => {
     try {
-        await Room.findByIdAndDelete(req.params.id);
-        res.status(200).json("Room has been deleted.");
+        const deleted = await Room.findByIdAndDelete(req.params.id);
+        if (!deleted) {
+            return res.status(404).json({ message: 'Room not found' });
+        }
+        res.status(200).json({ message: 'Room has been deleted.' });
     } catch (err) {
-        res.status(500).json(err);
+        console.error('[deleteRoom] Error:', err);
+        res.status(500).json({ message: err.message || 'Failed to delete room' });
     }
 };
 
@@ -57,6 +67,7 @@ module.exports = {
             const records = await HostelRecord.find().sort({ roomNumber: 1 });
             res.status(200).json(records);
         } catch (err) {
+            console.error('[getHostelRecords] Error:', err);
             res.status(500).json({ message: err.message || 'Failed to fetch hostel records' });
         }
     }

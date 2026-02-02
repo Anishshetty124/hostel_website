@@ -320,48 +320,27 @@ const resetPassword = async (req, res) => {
   }
 };
 
-// --- 7. GET ROOM MEMBERS (simple version: fetch all members for a room number) ---
+// --- 7. GET ROOM MEMBERS (fetch all members for a room number) ---
 const getRoomMembers = async (req, res) => {
-    // --- DEBUG: Show collection and sample document ---
-    try {
-      const { roomNumber } = req.query;
-      // 1. Handle missing input
-      if (!roomNumber) {
-        return res.status(200).json([]);
-      }
-      // 2. Convert string "402" to Number 402
-      const queryNumber = parseInt(roomNumber, 10);
-      // 3. Search the DB using the Number type
-      const members = await HostelRecord.find({ roomNumber: queryNumber });
-      // 4. Log the success
-      console.log(`[getRoomMembers] Success! Room: ${queryNumber} | Members Found: ${members.length}`);
-      // 5. Always return 200 with the array
-      return res.status(200).json(members);
-    } catch (error) {
-      console.error('Fetch Error:', error);
-      res.status(500).json({ message: 'Server error' });
-    }
   try {
     const { roomNumber } = req.query;
     if (!roomNumber || !roomNumber.trim()) {
-      console.error('[getRoomMembers] Error: Room number is required. Request:', req.method, req.originalUrl, req.query);
       return res.status(400).json({ message: 'Room number is required.' });
     }
-    const roomQuery = parseInt(roomNumber);
-    console.log(`[getRoomMembers] Searching for room:`, roomQuery, `(Type: ${typeof roomQuery}) | Also trying string: '${roomNumber}'`);
+
+    const queryNumber = parseInt(roomNumber, 10);
     const members = await HostelRecord.find({
       $or: [
         { roomNumber: roomNumber },
-        { roomNumber: roomQuery },
+        { roomNumber: queryNumber },
         { roomNumber: String(roomNumber) }
       ]
     });
-    console.log('[getRoomMembers] Query result:', members);
-    // Always return 200 with array, never 404
+
     return res.status(200).json(members);
   } catch (error) {
-    console.error('[getRoomMembers] Server error:', error, '\nStack:', error.stack, '\nRequest:', req.method, req.originalUrl, req.query);
-    res.status(500).json({ message: 'Server error', error: error.message, stack: error.stack, request: { method: req.method, url: req.originalUrl, query: req.query } });
+    console.error('[getRoomMembers] Server error:', error);
+    return res.status(500).json({ message: 'Server error' });
   }
 };
 

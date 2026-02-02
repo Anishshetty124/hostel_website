@@ -1,42 +1,45 @@
-import LightsOutGame from './pages/user/LightsOutGame';
-import Sudoku from './pages/user/Sudoku';
-import GameArena from './pages/user/GameArena';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthContext, AuthProvider } from './context/AuthContext';
 import { ProtectedRoute, AdminRoute } from './routes/ProtectedRoute';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState, Suspense, lazy } from 'react';
 import { subscribeUserToPush } from './utils/push';
 const PUBLIC_VAPID_KEY = 'BKk5EmsV8gS6MkGUE7hZf5DjKD6JsinOPfzVPH3xFK1WF9vNRcsLR5u1rTSzrMhgwIcstnloUHKMdD5rgZXX6D8';
 
 import LoadingSpinner from './components/LoadingSpinner';
 
-// Auth Pages
+// Auth Pages - Load immediately
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 
-// Layouts
+// Layouts - Load immediately
 import UserLayout from './components/layouts/UserLayout';
 import AdminLayout from './components/layouts/AdminLayout';
 
-// User Pages
-import UserDashboard from './pages/user/UserDashboard';
-import Profile from './pages/user/Profile';
-import MyRoom from './pages/user/MyRoom';
-import FoodMenu from './pages/user/FoodMenu';
-import Gallery from './pages/user/Gallery';
-import Feedback from './pages/user/Feedback';
-import Complaints from './pages/user/Complaints';
-import Games from './pages/user/Games';
-import MemoryMatch from './pages/user/MemoryMatch';
-import Notifications from './pages/Notifications';
+// Code-split User Pages (lazy load non-critical routes)
+const UserDashboard = lazy(() => import('./pages/user/UserDashboard'));
+const Profile = lazy(() => import('./pages/user/Profile'));
+const MyRoom = lazy(() => import('./pages/user/MyRoom'));
+const FoodMenu = lazy(() => import('./pages/user/FoodMenu'));
+const Gallery = lazy(() => import('./pages/user/Gallery'));
+const Feedback = lazy(() => import('./pages/user/Feedback'));
+const Complaints = lazy(() => import('./pages/user/Complaints'));
+const Games = lazy(() => import('./pages/user/Games'));
+const GameArena = lazy(() => import('./pages/user/GameArena'));
+const MemoryMatch = lazy(() => import('./pages/user/MemoryMatch'));
+const LightsOutGame = lazy(() => import('./pages/user/LightsOutGame'));
+const Sudoku = lazy(() => import('./pages/user/Sudoku'));
+const Notifications = lazy(() => import('./pages/Notifications'));
 
-// Admin Pages
-import AdminDashboard from './pages/admin/AdminDashboard';
-import ManageRooms from './pages/admin/ManageRooms';
-import AdminComplaints from './pages/admin/AdminComplaints';
-import AdminFoodMenu from './pages/admin/AdminFoodMenu';
-import SendNotice from './pages/admin/SendNotice';
+// Code-split Admin Pages (lazy load non-critical routes)
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const ManageRooms = lazy(() => import('./pages/admin/ManageRooms'));
+const AdminComplaints = lazy(() => import('./pages/admin/AdminComplaints'));
+const AdminFoodMenu = lazy(() => import('./pages/admin/AdminFoodMenu'));
+const SendNotice = lazy(() => import('./pages/admin/SendNotice'));
+
+// Lazy load suspense fallback
+const LazyLoader = () => <LoadingSpinner fullScreen={false} />;
 
 
 // Use logo192.png for notifications and PWA
@@ -76,34 +79,32 @@ const AppRoutes = () => {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       
       {/* Smart Root Redirect: Admin → /admin, User → /user/dashboard, Not Logged In → /login */}
-      {/* Smart Root Redirect: Admin → /admin, User → /user/dashboard, Not Logged In → /login */}
       <Route path="/" element={<RootRedirect />} />
 
       {/* --- USER ROUTES --- */}
       {/* Base Path: /user */}
       <Route path="/user" element={<UserLayout />}>
-          {/* Notifications route (global, not just user) */}
-          <Route path="notifications" element={<Notifications />} />
+        {/* Notifications route (global, not just user) */}
+        <Route path="notifications" element={<Suspense fallback={<LazyLoader />}><Notifications /></Suspense>} />
         {/* Redirect /user to /user/dashboard */}
         <Route index element={<Navigate to="/user/dashboard" replace />} />
         
         {/* Public Features */}
-        <Route path="dashboard" element={<UserDashboard />} />
-        <Route path="profile" element={<Profile />} />
-        <Route path="food" element={<FoodMenu />} />
-        <Route path="gallery" element={<Gallery />} />
+        <Route path="dashboard" element={<Suspense fallback={<LazyLoader />}><UserDashboard /></Suspense>} />
+        <Route path="profile" element={<Suspense fallback={<LazyLoader />}><Profile /></Suspense>} />
+        <Route path="food" element={<Suspense fallback={<LazyLoader />}><FoodMenu /></Suspense>} />
+        <Route path="gallery" element={<Suspense fallback={<LazyLoader />}><Gallery /></Suspense>} />
 
         {/* Features (no protection needed) */}
-        <Route path="rooms" element={<MyRoom />} />
-        <Route path="laundry" element={<Feedback />} />
-        <Route path="complaints" element={<Complaints />} />
+        <Route path="rooms" element={<Suspense fallback={<LazyLoader />}><MyRoom /></Suspense>} />
+        <Route path="laundry" element={<Suspense fallback={<LazyLoader />}><Feedback /></Suspense>} />
+        <Route path="complaints" element={<Suspense fallback={<LazyLoader />}><Complaints /></Suspense>} />
 
-
-        <Route path="games" element={<Games />} />
-        <Route path="games/:gameType" element={<GameArena />} />
-        <Route path="sudoku" element={<Sudoku />} />
-        <Route path="MemoryMatch" element={<MemoryMatch />} />
-        <Route path="LightsOutGame" element={<LightsOutGame />} />
+        <Route path="games" element={<Suspense fallback={<LazyLoader />}><Games /></Suspense>} />
+        <Route path="games/:gameType" element={<Suspense fallback={<LazyLoader />}><GameArena /></Suspense>} />
+        <Route path="sudoku" element={<Suspense fallback={<LazyLoader />}><Sudoku /></Suspense>} />
+        <Route path="MemoryMatch" element={<Suspense fallback={<LazyLoader />}><MemoryMatch /></Suspense>} />
+        <Route path="LightsOutGame" element={<Suspense fallback={<LazyLoader />}><LightsOutGame /></Suspense>} />
 
 
 
@@ -112,11 +113,11 @@ const AppRoutes = () => {
       {/* --- ADMIN ROUTES --- */}
       <Route element={<AdminRoute />}>
         <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<AdminDashboard />} />
-          <Route path="complaints" element={<AdminComplaints />} />
-          <Route path="rooms" element={<ManageRooms />} />
-          <Route path="food-menu" element={<AdminFoodMenu />} />
-          <Route path="send-notice" element={<SendNotice />} />
+          <Route index element={<Suspense fallback={<LazyLoader />}><AdminDashboard /></Suspense>} />
+          <Route path="complaints" element={<Suspense fallback={<LazyLoader />}><AdminComplaints /></Suspense>} />
+          <Route path="rooms" element={<Suspense fallback={<LazyLoader />}><ManageRooms /></Suspense>} />
+          <Route path="food-menu" element={<Suspense fallback={<LazyLoader />}><AdminFoodMenu /></Suspense>} />
+          <Route path="send-notice" element={<Suspense fallback={<LazyLoader />}><SendNotice /></Suspense>} />
         </Route>
       </Route>
 

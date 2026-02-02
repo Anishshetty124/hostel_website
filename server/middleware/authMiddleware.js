@@ -1,6 +1,11 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
+if (!process.env.JWT_SECRET) {
+    console.error('❌ JWT_SECRET is not set. Please configure it in your environment.');
+    process.exit(1);
+}
+
 const protect = async (req, res, next) => {
     let token;
 
@@ -22,6 +27,7 @@ const protect = async (req, res, next) => {
 
             next();
         } catch (error) {
+            console.error('[authMiddleware] Token verification failed:', error?.message || error);
             res.status(401).json({ message: 'Not authorized, token failed' });
         }
     } else {

@@ -1,0 +1,42 @@
+# robots.txt for myHostel Hostel Management App
+# This file tells search engines which pages to crawl and which to exclude
+
+# Allow all bots
+User-agent: *
+Allow: /
+
+# Disallow private/admin routes from being indexed
+Disallow: /admin/
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+
+# Allow public routes for better SEO
+Allow: /user/dashboard
+Allow: /user/gallery
+Allow: /user/food
+Allow: /user/profile
+
+# Specify crawl delay (in seconds) to prevent server overload
+Crawl-delay: 1
+
+# Specify request rate in requests per second
+Request-rate: 1/10s
+
+# Sitemap location (recommended for better indexing)
+Sitemap: https://yourdomain.com/sitemap.xml
+
+# Allow specific search engines for priority crawling
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+# Block bad bots
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /

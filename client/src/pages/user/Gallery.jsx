@@ -263,7 +263,11 @@ const Gallery = () => {
                 }
                 await loadMedia();
             } catch (err) {
-                // Optionally: show a toast or notification
+                const errorMsg = err.response?.data?.message || err.message || 'Upload failed';
+                setError(errorMsg);
+                setTimeout(() => setError(null), 5000);
+                console.error('[Gallery] Upload error:', err);
+                await loadMedia(true);
             }
         })();
     };
@@ -278,6 +282,7 @@ const Gallery = () => {
             return;
         }
         
+        const originalMedia = [...media];
         const deletedItem = media.find(m => m._id === id);
         
         // Remove from UI immediately
@@ -290,9 +295,11 @@ const Gallery = () => {
             
             // Clear cache after successful deletion
             try {
-                localStorage.removeItem(`${CACHE_KEY}_All_page_1`);
-                localStorage.removeItem(`${CACHE_KEY}_Photos_page_1`);
-                localStorage.removeItem(`${CACHE_KEY}_Videos_page_1`);
+                Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith(CACHE_KEY)) {
+                        localStorage.removeItem(key);
+                    }
+                });
             } catch (err) {
                 // Cache clear failed silently
             }
@@ -300,10 +307,8 @@ const Gallery = () => {
             setSuccess('Deleted successfully');
             setTimeout(() => setSuccess(null), 2000);
         } catch (err) {
-            // Restore item to UI on error
-            if (deletedItem) {
-                setMedia(prev => [...prev, deletedItem]);
-            }
+            // Restore item list on error
+            setMedia(originalMedia);
             
             if (err.response?.status === 404) {
                 setError('File not found or already deleted.');
