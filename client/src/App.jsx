@@ -162,6 +162,35 @@ function App() {
     subscribe();
   }, [user, token]);
 
+  // Prefetch common route chunks after initial load to reduce navigation lag
+  useEffect(() => {
+    const prefetch = () => {
+      import('./pages/user/Profile');
+      import('./pages/user/MyRoom');
+      import('./pages/user/FoodMenu');
+      import('./pages/user/Gallery');
+      import('./pages/user/Feedback');
+      import('./pages/user/Complaints');
+      import('./pages/user/Games');
+      import('./pages/user/GameArena');
+      import('./pages/Notifications');
+
+      import('./pages/admin/AdminDashboard');
+      import('./pages/admin/ManageRooms');
+      import('./pages/admin/AdminComplaints');
+      import('./pages/admin/AdminFoodMenu');
+      import('./pages/admin/SendNotice');
+    };
+
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      const id = window.requestIdleCallback(prefetch, { timeout: 2000 });
+      return () => window.cancelIdleCallback?.(id);
+    }
+
+    const id = setTimeout(prefetch, 1500);
+    return () => clearTimeout(id);
+  }, []);
+
   return (
     <BrowserRouter>
       <AuthProvider>
