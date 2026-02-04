@@ -76,6 +76,7 @@ const apiLimiter = rateLimit({
     max: 300, // limit each IP to 300 requests per window
     standardHeaders: true,
     legacyHeaders: false,
+    validate: { xForwardedForHeader: false },
     store: isRedisReady()
         ? new RedisStore({
             sendCommand: (...args) => redis.call(...args),
