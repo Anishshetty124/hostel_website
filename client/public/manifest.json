@@ -3,21 +3,9 @@
   "name": "myHostel Hostel Management",
   "icons": [
     {
-      "src": "/logo192.webp",
-      "type": "image/webp",
-      "sizes": "192x192",
-      "purpose": "any"
-    },
-    {
       "src": "/logo192.png",
       "type": "image/png",
       "sizes": "192x192",
-      "purpose": "any"
-    },
-    {
-      "src": "/logo512.webp",
-      "type": "image/webp",
-      "sizes": "512x512",
       "purpose": "any"
     },
     {

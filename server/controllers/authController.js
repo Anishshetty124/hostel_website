@@ -20,10 +20,14 @@ const getFirstNameFromFullName = (fullName) => {
 
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { OAuth2Client } = require("google-auth-library");
 
 // Import Models
 const User = require("../models/User");
 const HostelRecord = require("../models/HostelRecord");
+
+// Initialize Google OAuth Client
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Import Email Service
 const getAllUsers = async (req, res) => {
@@ -344,6 +348,158 @@ const getRoomMembers = async (req, res) => {
   }
 };
 
+// --- 8. GOOGLE OAUTH - VERIFY TOKEN & GET USER INFO ---
+const googleLogin = async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({ message: "Google token is required." });
+    }
+
+    // Verify the Google token
+    const ticket = await googleClient.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const { email, given_name, family_name, picture } = payload;
+
+    if (!email || !given_name) {
+      return res.status(400).json({ message: "Invalid Google token data." });
+    }
+
+    // Check if user already exists
+    let user = await User.findOne({ email: email.toLowerCase() });
+
+    if (!user) {
+      // User doesn't exist - return null to prompt for room number
+      return res.status(200).json({
+        action: "verify_room",
+        googleData: {
+          email: email.toLowerCase(),
+          firstName: given_name,
+          lastName: family_name || "",
+          picture: picture,
+        },
+        message: "User not found. Please enter your room number for verification.",
+      });
+    }
+
+    // User exists - generate token and return user data
+    const jwtToken = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "30d" }
+    );
+
+    res.status(200).json({
+      action: "login",
+      token: jwtToken,
+      user: {
+        id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        roomNumber: user.roomNumber,
+        role: user.role,
+      },
+    });
+
+  } catch (error) {
+    console.error("[googleLogin] Error:", error);
+    res.status(400).json({ message: "Google authentication failed." });
+  }
+};
+
+// --- 9. GOOGLE OAUTH - VERIFY ROOM & CREATE/UPDATE USER ---
+const googleVerifyRoom = async (req, res) => {
+  try {
+    const { email, firstName, lastName, roomNumber, picture } = req.body;
+
+    if (!email || !firstName || !roomNumber) {
+      return res.status(400).json({ message: "Email, first name, and room number are required." });
+    }
+
+    // Verify room membership in HostelRecord
+    const normalizedRoom = roomNumber.trim();
+    const queryNumber = parseInt(normalizedRoom, 10);
+    const roomMatch = [
+      { roomNumber: normalizedRoom },
+      { roomNumber: String(normalizedRoom) }
+    ];
+    if (!Number.isNaN(queryNumber)) {
+      roomMatch.push({ roomNumber: queryNumber });
+      roomMatch.push({ roomNumber: String(queryNumber) });
+    }
+
+    const validHosteller = await HostelRecord.findOne({
+      $and: [
+        { $or: roomMatch },
+        {
+          $or: [
+            { firstName: { $regex: new RegExp(`^${firstName}$`, "i") } },
+            { fullName: { $regex: new RegExp(firstName, "i") } }
+          ]
+        }
+      ]
+    });
+
+    if (!validHosteller) {
+      return res.status(403).json({
+        message: `Verification failed. Room ${roomNumber} does not match name "${firstName}" in our records.`,
+      });
+    }
+
+    // Find or create user
+    let user = await User.findOne({ email: email.toLowerCase() });
+
+    if (!user) {
+      // Create new user with Google OAuth
+      const tempPassword = await bcrypt.hash(`${email}:${Date.now()}`, 10);
+      user = new User({
+        firstName: firstName.trim(),
+        lastName: (lastName || "").trim(),
+        email: email.toLowerCase(),
+        password: tempPassword,
+        roomNumber: roomNumber.trim(),
+      });
+      await user.save();
+    } else {
+      // Update existing user with verified room number if needed
+      if (!user.roomNumber || user.roomNumber === "Not Assigned") {
+        user.roomNumber = roomNumber.trim();
+        await user.save();
+      }
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "30d" }
+    );
+
+    res.status(200).json({
+      token,
+      user: {
+        id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        roomNumber: user.roomNumber,
+        role: user.role,
+      },
+      message: "Google verification successful!",
+    });
+
+  } catch (error) {
+    console.error("[googleVerifyRoom] Error:", error);
+    res.status(500).json({ message: "Internal server error." });
+  }
+};
+
 // --- CRITICAL: EXPORT ALL FUNCTIONS ---
 module.exports = {
   register,
@@ -354,4 +510,6 @@ module.exports = {
   resetPassword,
   getRoomMembers,
   getAllUsers,
+  googleLogin,
+  googleVerifyRoom,
 };

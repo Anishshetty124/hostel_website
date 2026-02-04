@@ -1,10 +1,12 @@
 import { useState, useContext, useRef } from "react";
+import { GoogleLogin } from "@react-oauth/google";
 import { toast } from 'react-hot-toast';
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import api from "../utils/api";
 import Logo from "../assets/logo.svg";
 import { AuthContext } from "../context/AuthContext";
 import { FormInputSkeleton } from "../components/SkeletonLoaders";
+import { GoogleRoomVerificationModal } from "../components/GoogleRoomVerificationModal";
 
 const Login = () => {
   // Use 'identifier' to allow Name OR Email
@@ -15,11 +17,13 @@ const Login = () => {
   const [roomMembers, setRoomMembers] = useState([]);
   const [roomStatus, setRoomStatus] = useState({ loading: false, error: null });
   const [roomSearched, setRoomSearched] = useState(false);
+  const [showGoogleVerificationModal, setShowGoogleVerificationModal] = useState(false);
+  const [googleData, setGoogleData] = useState(null);
   const roomCacheRef = useRef({});
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useContext(AuthContext);
+  const { login, setAuth } = useContext(AuthContext);
 
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.id]: e.target.value }));
@@ -67,6 +71,60 @@ const Login = () => {
       setStatus({ loading: false, error: "Login failed" });
       toast.error("Login failed. Please check your name in the hostel record. It may be different from your real name.");
       console.error('[Login] Login error:', error);
+    }
+  };
+
+  const handleGoogleLoginSuccess = async (credentialResponse) => {
+    try {
+      const { credential } = credentialResponse || {};
+      if (!credential) {
+        toast.error("Google Sign-in failed. Please register manually.");
+        return;
+      }
+      const response = await api.post("/auth/google-login", { token: credential });
+      
+      if (response.data.action === "verify_room") {
+        // New user - show room verification modal
+        setGoogleData(response.data.googleData);
+        setShowGoogleVerificationModal(true);
+      } else if (response.data.action === "login" && response.data.token) {
+        // Existing user - directly login
+        setAuth({ token: response.data.token, user: response.data.user });
+        toast.success("Google Sign-in successful!");
+        
+        // Redirect based on role
+        const role = response.data.user?.role;
+        if (role === "admin") {
+          navigate("/admin");
+        } else {
+          const from = location.state?.from || "/user/dashboard";
+          navigate(from);
+        }
+      }
+    } catch (error) {
+      const msg = error.response?.data?.message || "Google authentication failed";
+        toast.error(`${msg}. Please register manually.`);
+      console.error("[Login] Google login error:", error);
+    }
+  };
+
+  const handleGoogleLoginError = () => {
+    toast.error("Google Sign-in failed. Please register manually.");
+    console.error("[Login] Google login failed");
+  };
+
+  const handleGoogleVerificationSuccess = (data) => {
+    setShowGoogleVerificationModal(false);
+    toast.success("Google verification successful!");
+    setAuth({ token: data.token, user: data.user });
+    
+    // Redirect based on role
+    const role = data.user?.role;
+    if (role === "admin") {
+      navigate("/admin");
+    } else {
+      const from = location.state?.from || "/user/dashboard";
+      navigate(from);
     }
   };
 
@@ -142,9 +200,32 @@ const Login = () => {
             Back
           </button>
 
-          <div className="mt-6 mb-8">
+          <div className="mt-6 mb-6">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent tracking-tight">Sign in to your account</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Use your email and password</p>
+          </div>
+
+          {/* Google Sign-in (Top) */}
+          <div className="mb-6">
+            <div className="w-full rounded-xl sm:rounded-2xl border border-indigo-200/70 dark:border-indigo-800/50 bg-indigo-50/40 dark:bg-indigo-950/20 p-3 sm:p-4 flex flex-col items-center gap-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">
+                Continue with Google
+              </p>
+              <div className="w-full flex justify-center">
+                <GoogleLogin
+                  onSuccess={handleGoogleLoginSuccess}
+                  onError={handleGoogleLoginError}
+                  width="280"
+                  text="signin_with"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 mb-6">
+            <div className="flex-1 h-px bg-gray-300/80 dark:bg-gray-600/80"></div>
+            <span className="text-sm sm:text-base font-semibold text-gray-600 dark:text-gray-300">OR</span>
+            <div className="flex-1 h-px bg-gray-300/80 dark:bg-gray-600/80"></div>
           </div>
 
           {status.error && (
@@ -249,6 +330,7 @@ const Login = () => {
                 )}
               </span>
             </button>
+
           </form>
 
           {showRoomLookup && (
@@ -297,6 +379,14 @@ const Login = () => {
           {/* Register Link moved to top for visibility */}
         </div>
       </div>
+
+      {/* Google Room Verification Modal */}
+      <GoogleRoomVerificationModal
+        isOpen={showGoogleVerificationModal}
+        googleData={googleData}
+        onVerified={handleGoogleVerificationSuccess}
+        onCancel={() => setShowGoogleVerificationModal(false)}
+      />
     </div>
   );
 };

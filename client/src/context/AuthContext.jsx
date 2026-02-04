@@ -50,6 +50,15 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    // Set auth data from external providers (e.g., Google)
+    const setAuth = (data) => {
+        if (!data?.token || !data?.user) return;
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('userInfo', JSON.stringify({ token: data.token, user: data.user }));
+        setUser(data.user);
+        setToken(data.token);
+    };
+
     const logout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('userInfo');
@@ -58,7 +67,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, login, logout, loading }}>
+        <AuthContext.Provider value={{ user, token, login, logout, loading, setAuth }}>
             {children}
         </AuthContext.Provider>
     );

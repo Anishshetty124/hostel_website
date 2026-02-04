@@ -311,14 +311,6 @@ const Complaints = () => {
 
                         <div className="flex gap-2 md:gap-4">
                             <button
-                                onClick={() => setIsFormOpen(true)}
-                                className="group relative inline-flex items-center justify-center flex-1 px-4 md:px-8 py-2.5 md:py-4 font-bold text-sm md:text-base text-white bg-indigo-600 dark:bg-indigo-600 hover:bg-indigo-700 dark:hover:bg-indigo-700 rounded-lg md:rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl"
-                            >
-                                <Plus size={18} className="mr-1.5 md:mr-2" />
-                                New Request
-                            </button>
-
-                            <button
                                 onClick={fetchComplaints}
                                 disabled={loading}
                                 className="group relative inline-flex items-center justify-center px-3 md:px-6 py-2.5 md:py-4 font-bold text-indigo-600 dark:text-indigo-400 bg-white dark:bg-gray-800 border border-indigo-200 dark:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg md:rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50"
@@ -367,6 +359,16 @@ const Complaints = () => {
                             className="w-full pl-10 pr-3 py-2.5 md:py-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg md:rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm md:text-base text-slate-900 dark:text-gray-100 placeholder:text-slate-400 dark:placeholder:text-gray-500 shadow-sm"
                         />
                     </div>
+                    
+                    {/* New Request Button Below Search */}
+                    <button
+                        onClick={() => setIsFormOpen(true)}
+                        className="w-full flex items-center justify-center gap-2 px-4 md:px-6 py-2.5 md:py-3.5 font-bold text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 rounded-lg md:rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl active:scale-95 text-sm md:text-base"
+                    >
+                        <Plus size={20} />
+                        <span>New Request</span>
+                    </button>
+                    
                     <div className="flex gap-2 md:gap-3">
                         <div className="flex flex-1 bg-white dark:bg-gray-800 p-0.5 md:p-1 rounded-lg md:rounded-xl border border-gray-300 dark:border-gray-700 gap-0.5 md:gap-1 shadow-sm">
                             {['all', 'pending', 'resolved'].map((t) => (
@@ -585,6 +587,22 @@ const Complaints = () => {
                     onClose={() => setLightboxImage(null)} 
                 />
             )}
+
+            {/* FLOATING ACTION BUTTON - Sticky Bottom Right */}
+            <motion.button
+                onClick={() => setIsFormOpen(true)}
+                className="fixed bottom-6 right-6 md:bottom-8 md:right-8 w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-indigo-600 to-indigo-700 dark:from-indigo-600 dark:to-indigo-800 text-white rounded-full shadow-2xl hover:shadow-2xl hover:scale-110 active:scale-95 transition-all duration-300 flex items-center justify-center z-40 group"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                initial={{ opacity: 0, scale: 0 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.3, type: 'spring', stiffness: 300 }}
+            >
+                <Plus size={24} className="md:size-28" />
+                <div className="absolute -top-12 md:-top-14 right-0 bg-gray-900 dark:bg-gray-700 text-white px-3 md:px-4 py-2 rounded-lg text-xs md:text-sm font-semibold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    New Request
+                </div>
+            </motion.button>
         </div>
     );
 };

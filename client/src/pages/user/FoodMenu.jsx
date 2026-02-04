@@ -35,41 +35,38 @@ const FoodMenu = () => {
         let isMounted = true;
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
         const allDays = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-        const todayIndex = new Date().getDay();
-        const todayName = allDays[todayIndex];
-        // 1. Fetch today's menu first
-        const fetchToday = async () => {
+
+        const normalizeWeeklyMenu = (data) => {
+            const mapped = {};
+            if (Array.isArray(data)) {
+                data.forEach((entry) => {
+                    if (entry && entry.day) mapped[entry.day] = entry.meals || {};
+                });
+            } else if (data && data.day) {
+                mapped[data.day] = data.meals || {};
+            }
+            allDays.forEach((day) => {
+                if (!mapped[day]) mapped[day] = {};
+            });
+            return mapped;
+        };
+
+        const fetchWeekly = async () => {
             setLoading(true);
             setError(null);
             try {
-                const res = await api.get('/food/today', { headers });
+                const res = await api.get('/food', { headers });
                 if (!isMounted) return;
-                if (res.data && res.data.day && res.data.meals) {
-                    setWeeklyMenu({ [res.data.day]: res.data.meals });
-                } else {
-                    setWeeklyMenu({ [todayName]: {} });
-                }
+                const normalized = normalizeWeeklyMenu(res.data);
+                setWeeklyMenu(normalized);
             } catch (err) {
-                if (isMounted) setError('Failed to load today\'s menu.');
+                if (isMounted) setError('Failed to load weekly menu.');
             } finally {
                 if (isMounted) setLoading(false);
             }
         };
-        fetchToday();
 
-        // 2. After a short delay, fetch other days in the background
-        setTimeout(() => {
-            allDays.forEach(day => {
-                if (day === todayName) return;
-                api.get(`/food/${day}`, { headers })
-                    .then(res => {
-                        if (res.data && res.data.day && res.data.meals && isMounted) {
-                            setWeeklyMenu(prev => ({ ...prev, [res.data.day]: res.data.meals }));
-                        }
-                    })
-                    .catch(() => {});
-            });
-        }, 500); // 0.5s delay before starting background fetch
+        fetchWeekly();
 
         return () => { isMounted = false; };
     }, [token]);

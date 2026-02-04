@@ -7,7 +7,7 @@ const notificationSchema = new mongoose.Schema({
   isPublic: { type: Boolean, default: false },
   sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   senderName: { type: String },
-  type: { type: String, enum: ['notice', 'personal'], default: 'notice' },
+  type: { type: String, enum: ['notice', 'personal', 'food'], default: 'notice' },
   createdAt: { type: Date, default: Date.now },
   read: { type: Boolean, default: false },
 });

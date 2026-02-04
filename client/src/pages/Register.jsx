@@ -1,9 +1,12 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useContext } from "react";
+import { GoogleLogin } from "@react-oauth/google";
 import { toast } from 'react-hot-toast';
 import { Link, useNavigate } from "react-router-dom";
 import api from "../utils/api";
 import Logo from "../assets/logo.svg";
 import { FormInputSkeleton } from "../components/SkeletonLoaders";
+import { GoogleRoomVerificationModal } from "../components/GoogleRoomVerificationModal";
+import { AuthContext } from "../context/AuthContext";
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -20,7 +23,10 @@ const Register = () => {
   const [roomStatus, setRoomStatus] = useState({ loading: false, error: null });
   const [roomSearched, setRoomSearched] = useState(false);
   const roomCacheRef = useRef({});
+  const [showGoogleVerificationModal, setShowGoogleVerificationModal] = useState(false);
+  const [googleData, setGoogleData] = useState(null);
   const navigate = useNavigate();
+  const { setAuth } = useContext(AuthContext);
 
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.id]: e.target.value }));
@@ -69,6 +75,44 @@ const Register = () => {
     }
   };
 
+  const handleGoogleLoginSuccess = async (credentialResponse) => {
+    try {
+      const { credential } = credentialResponse || {};
+      if (!credential) {
+        toast.error("Google Sign-in failed. Please register manually.");
+        return;
+      }
+      const response = await api.post("/auth/google-login", { token: credential });
+      
+      if (response.data.action === "verify_room") {
+        // New user - show room verification modal
+        setGoogleData(response.data.googleData);
+        setShowGoogleVerificationModal(true);
+      } else if (response.data.action === "login" && response.data.token) {
+        // Existing user - directly login
+        setAuth({ token: response.data.token, user: response.data.user });
+        toast.success("Google Sign-in successful!");
+        navigate("/user/dashboard");
+      }
+    } catch (error) {
+      const msg = error.response?.data?.message || "Google authentication failed";
+      toast.error(`${msg}. Please register manually.`);
+      console.error("[Register] Google login error:", error);
+    }
+  };
+
+  const handleGoogleLoginError = () => {
+    toast.error("Google Sign-in failed. Please register manually.");
+    console.error("[Register] Google login failed");
+  };
+
+  const handleGoogleVerificationSuccess = (data) => {
+    setShowGoogleVerificationModal(false);
+    toast.success("Google verification successful!");
+    setAuth({ token: data.token, user: data.user });
+    navigate("/user/dashboard");
+  };
+
   const fetchRoomMembers = async () => {
     const query = (roomQuery || formData.roomNumber || "").trim();
     if (!query) {
@@ -89,7 +133,6 @@ const Register = () => {
     setRoomMembers([]);
     try {
       const res = await api.get(`/auth/room-members`, { params: { roomNumber: query } });
-      // Support both array and object response
       let members = [];
       if (Array.isArray(res.data)) {
         members = res.data;
@@ -135,9 +178,32 @@ const Register = () => {
             Back
           </button>
 
-          <div className="mt-6 mb-8">
+          <div className="mt-6 mb-6">
             <h2 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent tracking-tight">Verify & Register</h2>
             <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">Match your details with hostel records to continue.</p>
+          </div>
+
+          {/* Google Sign-in (Top) */}
+          <div className="mb-6">
+            <div className="w-full rounded-xl sm:rounded-2xl border border-indigo-200/70 dark:border-indigo-800/50 bg-indigo-50/40 dark:bg-indigo-950/20 p-3 sm:p-4 flex flex-col items-center gap-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">
+                Continue with Google
+              </p>
+              <div className="w-full flex justify-center">
+                <GoogleLogin
+                  onSuccess={handleGoogleLoginSuccess}
+                  onError={handleGoogleLoginError}
+                  width="280"
+                  text="signup_with"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 mb-6">
+            <div className="flex-1 h-px bg-gray-300/80 dark:bg-gray-600/80"></div>
+            <span className="text-sm sm:text-base font-semibold text-gray-600 dark:text-gray-300">OR</span>
+            <div className="flex-1 h-px bg-gray-300/80 dark:bg-gray-600/80"></div>
           </div>
 
           {status.error && (
@@ -225,6 +291,7 @@ const Register = () => {
                 )}
               </span>
             </button>
+
           </form>
 
           {showRoomLookup && (
@@ -283,6 +350,14 @@ const Register = () => {
           </p>
         </div>
       </div>
+
+      {/* Google Room Verification Modal */}
+      <GoogleRoomVerificationModal
+        isOpen={showGoogleVerificationModal}
+        googleData={googleData}
+        onVerified={handleGoogleVerificationSuccess}
+        onCancel={() => setShowGoogleVerificationModal(false)}
+      />
     </div>
   );
 };

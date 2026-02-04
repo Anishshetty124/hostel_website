@@ -1,11 +1,15 @@
 const express = require('express');
 const router = express.Router();
 
-const { register, login, forgotPassword, verifyResetCode, resetPassword, updateEmail, updatePassword, getRoomMembers, getAllUsers } = require('../controllers/authController');
+const { register, login, forgotPassword, verifyResetCode, resetPassword, updateEmail, updatePassword, getRoomMembers, getAllUsers, googleLogin, googleVerifyRoom } = require('../controllers/authController');
 const { protect, admin } = require('../middleware/authMiddleware');
 
 router.post('/register', register);
 router.post('/login', login);
+
+// Google OAuth Routes
+router.post('/google-login', googleLogin);
+router.post('/google-verify-room', googleVerifyRoom);
 
 // Password Reset Routes
 router.post('/forgot-password', forgotPassword);
