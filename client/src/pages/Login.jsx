@@ -71,8 +71,13 @@ const Login = () => {
         console.error('[Login] Login error:', result.message || "Login failed");
       }
     } catch (error) {
-      setStatus({ loading: false, error: "Login failed" });
-      toast.error("Login failed. Please check your name in the hostel record. It may be different from your real name.");
+      const statusCode = error.response?.status;
+      let message = "Login failed";
+      if (statusCode === 400) message = "Invalid credentials.";
+      if (statusCode === 404) message = "Account not found. Please register first.";
+      if (statusCode === 409) message = "Duplicate accounts detected. Please login using your Email.";
+      setStatus({ loading: false, error: message });
+      toast.error(message);
       console.error('[Login] Login error:', error);
     }
   };
@@ -80,6 +85,7 @@ const Login = () => {
   const handleGoogleLoginSuccess = async (credentialResponse) => {
     try {
       setGoogleError(null);
+      setGoogleLoading(true);
       const { credential } = credentialResponse || {};
       if (!credential) {
         const msg = "Google Sign-in failed. Please register manually.";
@@ -233,7 +239,12 @@ const Login = () => {
               <p className="text-xs font-semibold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">
                 Continue with Google
               </p>
-              <div className="w-full flex justify-center" onClick={() => setGoogleLoading(true)}>
+              <div
+                className="w-full flex justify-center"
+                onPointerDownCapture={() => setGoogleLoading(true)}
+                onTouchStart={() => setGoogleLoading(true)}
+                onMouseDown={() => setGoogleLoading(true)}
+              >
                 <GoogleLogin
                   onSuccess={handleGoogleLoginSuccess}
                   onError={handleGoogleLoginError}

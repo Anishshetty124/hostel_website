@@ -81,6 +81,7 @@ const Register = () => {
   const handleGoogleLoginSuccess = async (credentialResponse) => {
     try {
       setGoogleError(null);
+      setGoogleLoading(true);
       const { credential } = credentialResponse || {};
       if (!credential) {
         const msg = "Google Sign-in failed. Please register manually.";
@@ -211,7 +212,12 @@ const Register = () => {
               <p className="text-xs font-semibold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">
                 Continue with Google
               </p>
-              <div className="w-full flex justify-center" onClick={() => setGoogleLoading(true)}>
+              <div
+                className="w-full flex justify-center"
+                onPointerDownCapture={() => setGoogleLoading(true)}
+                onTouchStart={() => setGoogleLoading(true)}
+                onMouseDown={() => setGoogleLoading(true)}
+              >
                 <GoogleLogin
                   onSuccess={handleGoogleLoginSuccess}
                   onError={handleGoogleLoginError}

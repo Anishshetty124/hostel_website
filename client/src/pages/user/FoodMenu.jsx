@@ -51,18 +51,23 @@ const FoodMenu = () => {
             return mapped;
         };
 
-        const fetchWeekly = async () => {
+        const fetchWeekly = async (attempt = 0) => {
             setLoading(true);
-            setError(null);
+            if (attempt === 0) setError(null);
             try {
                 const res = await api.get('/food', { headers });
                 if (!isMounted) return;
                 const normalized = normalizeWeeklyMenu(res.data);
                 setWeeklyMenu(normalized);
+                setLoading(false);
             } catch (err) {
-                if (isMounted) setError('Failed to load weekly menu.');
-            } finally {
-                if (isMounted) setLoading(false);
+                if (!isMounted) return;
+                if (attempt < 1) {
+                    setTimeout(() => fetchWeekly(attempt + 1), 800);
+                    return;
+                }
+                setError('Failed to load weekly menu.');
+                setLoading(false);
             }
         };
 
@@ -117,7 +122,46 @@ const FoodMenu = () => {
         return <div className="flex justify-center items-center min-h-screen"><LoadingSpinner /></div>;
     }
     if (error) {
-        return <div className="flex justify-center items-center min-h-screen text-red-600 font-bold">{error}</div>;
+        return (
+            <div className="flex flex-col justify-center items-center min-h-screen text-red-600 font-bold gap-4">
+                <div>{error}</div>
+                <button
+                    onClick={() => {
+                        setError(null);
+                        setWeeklyMenu(null);
+                        setLoading(true);
+                        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+                        api.get('/food', { headers })
+                            .then((res) => {
+                                const normalized = (data) => {
+                                    const mapped = {};
+                                    const allDays = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+                                    if (Array.isArray(data)) {
+                                        data.forEach((entry) => {
+                                            if (entry && entry.day) mapped[entry.day] = entry.meals || {};
+                                        });
+                                    } else if (data && data.day) {
+                                        mapped[data.day] = data.meals || {};
+                                    }
+                                    allDays.forEach((day) => {
+                                        if (!mapped[day]) mapped[day] = {};
+                                    });
+                                    return mapped;
+                                };
+                                setWeeklyMenu(normalized(res.data));
+                                setLoading(false);
+                            })
+                            .catch(() => {
+                                setError('Failed to load weekly menu.');
+                                setLoading(false);
+                            });
+                    }}
+                    className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors"
+                >
+                    Retry
+                </button>
+            </div>
+        );
     }
     if (!weeklyMenu) {
         return <div className="flex justify-center items-center min-h-screen text-gray-500">No menu data available.</div>;
