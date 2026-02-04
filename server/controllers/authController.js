@@ -27,7 +27,15 @@ const User = require("../models/User");
 const HostelRecord = require("../models/HostelRecord");
 
 // Initialize Google OAuth Client
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const googleClient = new OAuth2Client();
+
+const getGoogleClientIds = () => {
+  const raw = process.env.GOOGLE_CLIENT_IDS || process.env.GOOGLE_CLIENT_ID || "";
+  return raw
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+};
 
 // Import Email Service
 const getAllUsers = async (req, res) => {
@@ -357,10 +365,16 @@ const googleLogin = async (req, res) => {
       return res.status(400).json({ message: "Google token is required." });
     }
 
+    const audiences = getGoogleClientIds();
+    if (audiences.length === 0) {
+      console.error("[googleLogin] Missing Google client ID configuration.");
+      return res.status(500).json({ message: "Google authentication is not configured." });
+    }
+
     // Verify the Google token
     const ticket = await googleClient.verifyIdToken({
       idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID,
+      audience: audiences,
     });
 
     const payload = ticket.getPayload();
@@ -408,6 +422,13 @@ const googleLogin = async (req, res) => {
     });
 
   } catch (error) {
+    try {
+      const parts = (req.body?.token || '').split('.');
+      if (parts.length === 3) {
+        const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
+        console.error('[googleLogin] Token aud:', payload?.aud, 'expected:', process.env.GOOGLE_CLIENT_ID);
+      }
+    } catch {}
     console.error("[googleLogin] Error:", error);
     res.status(400).json({ message: "Google authentication failed." });
   }

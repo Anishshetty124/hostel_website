@@ -12,6 +12,7 @@ const Login = () => {
   // Use 'identifier' to allow Name OR Email
   const [formData, setFormData] = useState({ identifier: "", password: "" });
   const [status, setStatus] = useState({ loading: false, error: null });
+  const [googleError, setGoogleError] = useState(null);
   const [showRoomLookup, setShowRoomLookup] = useState(false);
   const [roomQuery, setRoomQuery] = useState("");
   const [roomMembers, setRoomMembers] = useState([]);
@@ -76,9 +77,12 @@ const Login = () => {
 
   const handleGoogleLoginSuccess = async (credentialResponse) => {
     try {
+      setGoogleError(null);
       const { credential } = credentialResponse || {};
       if (!credential) {
-        toast.error("Google Sign-in failed. Please register manually.");
+        const msg = "Google Sign-in failed. Please register manually.";
+        setGoogleError(msg);
+        toast.error(msg);
         return;
       }
       const response = await api.post("/auth/google-login", { token: credential });
@@ -103,13 +107,17 @@ const Login = () => {
       }
     } catch (error) {
       const msg = error.response?.data?.message || "Google authentication failed";
-        toast.error(`${msg}. Please register manually.`);
+      const fullMsg = `${msg}. Please register manually.`;
+      setGoogleError(fullMsg);
+      toast.error(fullMsg);
       console.error("[Login] Google login error:", error);
     }
   };
 
   const handleGoogleLoginError = () => {
-    toast.error("Google Sign-in failed. Please register manually.");
+    const msg = "Google Sign-in failed. Please register manually.";
+    setGoogleError(msg);
+    toast.error(msg);
     console.error("[Login] Google login failed");
   };
 
@@ -227,6 +235,12 @@ const Login = () => {
             <span className="text-sm sm:text-base font-semibold text-gray-600 dark:text-gray-300">OR</span>
             <div className="flex-1 h-px bg-gray-300/80 dark:bg-gray-600/80"></div>
           </div>
+
+          {googleError && (
+            <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800/50 rounded-xl text-amber-700 dark:text-amber-300 text-sm text-center font-medium">
+              {googleError}
+            </div>
+          )}
 
           {status.error && (
             <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800/50 rounded-xl text-red-600 dark:text-red-400 text-sm text-center font-medium flex items-center gap-2 justify-center animate-pulse">
