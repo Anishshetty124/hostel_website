@@ -289,7 +289,7 @@ const Login = () => {
                   onChange={handleChange}
                   placeholder="••••••••"
                   className="w-full bg-gray-50 dark:bg-gray-900/50 border-2 border-gray-300 dark:border-gray-600 rounded-xl pl-12 pr-12 py-3.5 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-gray-500 dark:focus:border-gray-400 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-900/40 transition-all duration-200"
-                />
+                />  
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
