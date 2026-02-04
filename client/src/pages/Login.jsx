@@ -6,7 +6,6 @@ import api from "../utils/api";
 import Logo from "../assets/logo.svg";
 import { AuthContext } from "../context/AuthContext";
 import { FormInputSkeleton } from "../components/SkeletonLoaders";
-import { LoadingSpinner } from "../components/LoadingSpinner";
 import { GoogleRoomVerificationModal } from "../components/GoogleRoomVerificationModal";
 
 const Login = () => {
@@ -15,6 +14,7 @@ const Login = () => {
   const [status, setStatus] = useState({ loading: false, error: null });
   const [googleError, setGoogleError] = useState(null);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [googlePrompting, setGooglePrompting] = useState(false);
   const [showRoomLookup, setShowRoomLookup] = useState(false);
   const [roomQuery, setRoomQuery] = useState("");
   const [roomMembers, setRoomMembers] = useState([]);
@@ -85,22 +85,28 @@ const Login = () => {
   const handleGoogleLoginSuccess = async (credentialResponse) => {
     try {
       setGoogleError(null);
+      setGooglePrompting(false);
       setGoogleLoading(true);
+      const t0 = performance.now();
       const { credential } = credentialResponse || {};
       if (!credential) {
         const msg = "Google Sign-in failed. Please register manually.";
         setGoogleError(msg);
         toast.error(msg);
         setGoogleLoading(false);
+        setGooglePrompting(false);
         return;
       }
       const response = await api.post("/auth/google-login", { token: credential });
+      const t1 = performance.now();
+      console.info(`[Login] Google login API time: ${Math.round(t1 - t0)}ms`);
       
       if (response.data.action === "verify_room") {
         // New user - show room verification modal
         setGoogleData(response.data.googleData);
         setShowGoogleVerificationModal(true);
         setGoogleLoading(false);
+        setGooglePrompting(false);
       } else if (response.data.action === "login" && response.data.token) {
         // Existing user - directly login
         setAuth({ token: response.data.token, user: response.data.user });
@@ -121,6 +127,7 @@ const Login = () => {
       setGoogleError(fullMsg);
       toast.error(fullMsg);
       setGoogleLoading(false);
+      setGooglePrompting(false);
       console.error("[Login] Google login error:", error);
     }
   };
@@ -130,6 +137,7 @@ const Login = () => {
     setGoogleError(msg);
     toast.error(msg);
     setGoogleLoading(false);
+    setGooglePrompting(false);
     console.error("[Login] Google login failed");
   };
 
@@ -184,15 +192,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-start sm:items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900 px-3 sm:px-4 py-6 sm:py-10 transition-colors duration-300 relative">
-      {googleLoading && (
-        <div className="absolute inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center">
-          <div className="bg-white dark:bg-gray-800 rounded-xl px-4 py-3 shadow-lg flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
-            <LoadingSpinner />
-            <span>Signing in with Google...</span>
-          </div>
-        </div>
-      )}
+    <div className="min-h-screen w-full flex items-start sm:items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900 px-3 sm:px-4 py-6 sm:py-10 transition-colors duration-300">
       <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-0 rounded-3xl overflow-hidden border border-gray-200 dark:border-gray-800/50 shadow-2xl">
         {/* Brand / Visual Panel */}
         <div className="relative hidden md:flex bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-700 dark:from-indigo-600 dark:via-indigo-700 dark:to-purple-900 items-center justify-center p-10 overflow-hidden">
@@ -215,12 +215,12 @@ const Login = () => {
             <span className="inline-block px-4 py-2 rounded-full font-semibold text-indigo-700 dark:text-indigo-200 bg-indigo-50 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-700 text-base md:text-lg">
               Don’t have an account?{' '}
               <Link to="/register" className="underline underline-offset-2 font-bold text-indigo-600 dark:text-indigo-300 hover:text-indigo-800 dark:hover:text-indigo-100 transition-colors">Register</Link>
-            </span>
-          </div>
-
-          <button 
-            onClick={() => navigate('/user/dashboard')}
-            className="inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 text-xs sm:text-sm font-medium transition-colors w-fit"
+              <div
+                className="w-full flex justify-center"
+                onPointerDownCapture={() => setGooglePrompting(true)}
+                onTouchStart={() => setGooglePrompting(true)}
+                onMouseDown={() => setGooglePrompting(true)}
+              >
           >
             <svg className="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -228,13 +228,13 @@ const Login = () => {
             Back
           </button>
 
-          <div className="mt-4 sm:mt-6 mb-5">
+              {googlePrompting && !googleLoading && (
             <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent tracking-tight">Sign in to your account</h1>
             <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">Use your email and password</p>
           </div>
 
           {/* Google Sign-in (Top) */}
-          <div className="mb-5 sm:mb-6">
+          <div className="mb-6">
             <div className="w-full rounded-xl sm:rounded-2xl border border-indigo-200/70 dark:border-indigo-800/50 bg-indigo-50/40 dark:bg-indigo-950/20 p-3 sm:p-4 flex flex-col items-center gap-3">
               <p className="text-xs font-semibold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">
                 Continue with Google
@@ -254,7 +254,7 @@ const Login = () => {
               </div>
               {googleLoading && (
                 <div className="text-xs text-indigo-600 dark:text-indigo-300 flex items-center gap-2">
-                  <LoadingSpinner />
+                  <span className="inline-block h-3 w-3 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
                   <span>Waiting for Google...</span>
                 </div>
               )}
@@ -282,6 +282,13 @@ const Login = () => {
             </div>
           )}
 
+          {googleLoading ? (
+            <div className="py-10 flex flex-col items-center justify-center text-center gap-3">
+              <div className="h-10 w-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+              <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">Logging you in…</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Please wait</p>
+            </div>
+          ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="group">
               <label htmlFor="identifier" className="block text-gray-700 dark:text-gray-300 text-xs font-bold uppercase tracking-wider mb-2 ml-1">
@@ -377,6 +384,7 @@ const Login = () => {
             </button>
 
           </form>
+          )}
 
           {showRoomLookup && (
             <div className="mt-6 border border-indigo-200 dark:border-indigo-800/50 rounded-xl p-4 bg-indigo-50/30 dark:bg-indigo-950/20">

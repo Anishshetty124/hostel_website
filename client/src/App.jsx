@@ -191,6 +191,17 @@ function App() {
     return () => clearTimeout(id);
   }, []);
 
+  // Keep-alive ping to reduce cold starts (every 5 minutes)
+  useEffect(() => {
+    const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '');
+    const ping = () => {
+      fetch(`${baseUrl}/api/health`, { method: 'GET' }).catch(() => {});
+    };
+    ping();
+    const id = setInterval(ping, 5 * 60 * 1000);
+    return () => clearInterval(id);
+  }, []);
+
   return (
     <BrowserRouter>
       <AuthProvider>

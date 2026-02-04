@@ -359,6 +359,7 @@ const getRoomMembers = async (req, res) => {
 // --- 8. GOOGLE OAUTH - VERIFY TOKEN & GET USER INFO ---
 const googleLogin = async (req, res) => {
   try {
+    const startTs = Date.now();
     const { token } = req.body;
 
     if (!token) {
@@ -376,6 +377,7 @@ const googleLogin = async (req, res) => {
       idToken: token,
       audience: audiences,
     });
+    const verifyMs = Date.now() - startTs;
 
     const payload = ticket.getPayload();
     const { email, given_name, family_name, picture } = payload;
@@ -401,7 +403,9 @@ const googleLogin = async (req, res) => {
       });
     }
 
+      console.info(`[googleLogin] verifyIdToken: ${verifyMs}ms`);
     // User exists - generate token and return user data
+      console.info(`[googleLogin] failed in ${Date.now() - startTs}ms`);
     const jwtToken = jwt.sign(
       { id: user._id },
       process.env.JWT_SECRET,

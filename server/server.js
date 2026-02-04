@@ -70,6 +70,11 @@ app.use(express.json()); // Allow JSON data
 app.use(helmet());       // Security headers
 app.use(compression());  // Gzip compression for speed
 
+// --- Health Check (keep-alive) ---
+app.get('/api/health', (req, res) => {
+    res.status(200).json({ status: 'ok', timestamp: Date.now() });
+});
+
 // --- Rate Limiting (Redis-backed if available) ---
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
