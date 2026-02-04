@@ -30,6 +30,9 @@ require('./utils/notificationCron');
 const app = express();
 const server = http.createServer(app);
 
+// Trust reverse proxy (Railway/Netlify) for correct client IPs
+app.set('trust proxy', 1);
+
 // --- Socket.io Setup ---
 const io = new Server(server, {
     cors: {

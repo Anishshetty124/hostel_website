@@ -142,6 +142,17 @@ const Gallery = () => {
         };
     }, [selectedId]);
 
+    // Close lightbox on browser back (popstate)
+    useEffect(() => {
+        const handlePopState = () => {
+            if (selectedId) {
+                setSelectedId(null);
+            }
+        };
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, [selectedId]);
+
     // Scroll to upload section when opened (improves mobile visibility)
     useEffect(() => {
         if (showUploadSection) {
@@ -159,6 +170,20 @@ const Gallery = () => {
         setTimeout(() => {
             uploadSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 100);
+    };
+
+    const openLightbox = (id) => {
+        if (!id) return;
+        setSelectedId(id);
+        window.history.pushState({ lightbox: true, id }, '', window.location.href);
+    };
+
+    const closeLightbox = () => {
+        if (window.history.state?.lightbox) {
+            window.history.back();
+        } else {
+            setSelectedId(null);
+        }
     };
 
     const openFilePicker = () => {
@@ -695,7 +720,7 @@ const Gallery = () => {
                                                     exit={shouldAnimate ? { opacity: 0, scale: 0.9 } : false}
                                                     transition={shouldAnimate ? { duration: 0.3 } : { duration: 0 }}
                                                     whileHover={shouldAnimate ? { y: -8 } : {}}
-                                                    onClick={() => setSelectedId(photo._id)}
+                                                    onClick={() => openLightbox(photo._id)}
                                                     className="bg-white dark:bg-gray-800 p-1.5 shadow-sm border border-gray-100 dark:border-gray-700 rounded-3xl cursor-pointer hover:shadow-2xl transition-all relative"
                                                 >
                                                     {deleting === photo._id && (
@@ -850,7 +875,7 @@ const Gallery = () => {
                                                     animate={{ opacity: 1, scale: 1 }}
                                                     exit={{ opacity: 0, scale: 0.9 }}
                                                     whileHover={{ y: -8 }}
-                                                    onClick={() => setSelectedId(photo._id)}
+                                                    onClick={() => openLightbox(photo._id)}
                                                     className="bg-white dark:bg-gray-800 p-1.5 shadow-sm border border-gray-100 dark:border-gray-700 rounded-3xl cursor-pointer hover:shadow-2xl transition-all relative"
                                                 >
                                                     {deleting === photo._id && (
@@ -941,7 +966,7 @@ const Gallery = () => {
                                                 key={vid._id + '-' + idx}
                                                 layout
                                                 whileHover={{ scale: 1.02 }}
-                                                onClick={() => setSelectedId(vid._id)}
+                                                onClick={() => openLightbox(vid._id)}
                                                 className="flex-shrink-0 w-[180px] h-[320px] md:w-[240px] md:h-[426px] rounded-3xl overflow-hidden shadow-2xl bg-black relative snap-center cursor-pointer group"
                                             >
                                                 {deleting === vid._id && (
@@ -1002,7 +1027,7 @@ const Gallery = () => {
                                             animate={{ opacity: 1, scale: 1 }}
                                             exit={{ opacity: 0, scale: 0.9 }}
                                             whileHover={{ y: -8 }}
-                                            onClick={() => setSelectedId(vid._id)}
+                                            onClick={() => openLightbox(vid._id)}
                                             className="bg-black rounded-3xl overflow-hidden shadow-2xl relative cursor-pointer hover:shadow-2xl transition-all aspect-[4/6]"
                                         >
                                             {deleting === vid._id && (
@@ -1098,7 +1123,7 @@ const Gallery = () => {
                             <motion.div
                                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                                 className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-1 sm:p-4 backdrop-blur-xl overflow-y-auto"
-                                onClick={() => setSelectedId(null)}
+                                onClick={closeLightbox}
                             >
                                 <motion.div
                                     initial={{ scale: 0.9 }} animate={{ scale: 1 }}
@@ -1108,7 +1133,7 @@ const Gallery = () => {
                                     <button 
                                         className="absolute top-2 right-2 text-white text-3xl sm:text-5xl font-thin hover:rotate-90 transition-transform bg-black/40 rounded-full px-2 py-0.5 sm:px-3 sm:py-1 z-50" 
                                         style={{ zIndex: 100, pointerEvents: 'auto' }}
-                                        onClick={() => setSelectedId(null)}
+                                        onClick={closeLightbox}
                                         aria-label="Close"
                                     >
                                         &times;
