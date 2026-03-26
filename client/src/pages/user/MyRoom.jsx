@@ -9,16 +9,42 @@ const MyRoom = () => {
     const [roomDetails, setRoomDetails] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const CACHE_KEY = `myroom_cache_${user?.roomNumber || 'unknown'}`;
+    const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
     useEffect(() => {
-        const fetchRoomInfo = async () => {
+        const readCache = () => {
+            try {
+                const raw = localStorage.getItem(CACHE_KEY);
+                if (!raw) return null;
+                const parsed = JSON.parse(raw);
+                if (!parsed?.timestamp || Date.now() - parsed.timestamp > CACHE_TTL) return null;
+                return parsed;
+            } catch {
+                return null;
+            }
+        };
+
+        const writeCache = (data) => {
+            try {
+                localStorage.setItem(CACHE_KEY, JSON.stringify({
+                    timestamp: Date.now(),
+                    members: data.members || [],
+                    roomNumber: data.roomNumber
+                }));
+            } catch {}
+        };
+
+        const fetchRoomInfo = async (isBackground = false) => {
             if (!user?.roomNumber) {
                 setError('No room number found for your account.');
                 setLoading(false);
                 return;
             }
-            setLoading(true);
-            setError(null);
+            if (!isBackground) {
+                setLoading(true);
+                setError(null);
+            }
             try {
                 // Fetch all members in the same room (user endpoint)
                 const res = await api.get('/rooms/my-room-members', {
@@ -26,13 +52,24 @@ const MyRoom = () => {
                 });
                 setMembers(res.data || []);
                 setRoomDetails({ roomNumber: user.roomNumber });
+                writeCache({ members: res.data || [], roomNumber: user.roomNumber });
             } catch (err) {
-                setError('Failed to fetch room info.');
+                if (!isBackground) setError('Failed to fetch room info.');
             } finally {
-                setLoading(false);
+                if (!isBackground) setLoading(false);
             }
         };
-        if (user && token) fetchRoomInfo();
+        if (user && token) {
+            const cached = readCache();
+            if (cached) {
+                setMembers(cached.members || []);
+                setRoomDetails({ roomNumber: cached.roomNumber || user.roomNumber });
+                setLoading(false);
+                fetchRoomInfo(true); // refresh in background
+            } else {
+                fetchRoomInfo();
+            }
+        }
     }, [user, token]);
 
     return (

@@ -1,0 +1,220 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: hostel-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  redis:
+    image: redis:7-alpine
+    container_name: hostel-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: hostel-server
+    restart: unless-stopped
+    depends_on:
+      - mongo
+      - redis
+    environment:
+      PORT: 5000
+      NODE_ENV: production
+      MONGO_URI: mongodb://mongo:27017/hostel_db
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ghctrxddcgf
+      CLIENT_URL: http://localhost
+    ports:
+      - "5000:5000"
+
+  auth-service:
+    build:
+      context: ./microservices/auth-service
+    container_name: hostel-auth-service
+    restart: unless-stopped
+    profiles: ["micro"]
+    depends_on:
+      - mongo
+      - server
+    environment:
+      PORT: 5001
+      MONGO_URI: mongodb://mongo:27017/hostel_db
+      JWT_SECRET: ghctrxddcgf
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-Hostel Management <onboarding@resend.dev>}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_IDS: ${GOOGLE_CLIENT_IDS:-}
+      CLIENT_URL: http://localhost
+
+  api-gateway:
+    build:
+      context: ./microservices/api-gateway
+    container_name: hostel-api-gateway
+    restart: unless-stopped
+    profiles: ["micro"]
+    depends_on:
+      - server
+      - auth-service
+      - room-service
+      - notification-service
+      - complaint-service
+      - food-service
+      - gallery-service
+      - feedback-service
+      - games-service
+    environment:
+      PORT: 5100
+      MONOLITH_URL: http://server:5000
+      AUTH_SERVICE_URL: http://auth-service:5001
+      ROOM_SERVICE_URL: http://room-service:5002
+      NOTIFICATION_SERVICE_URL: http://notification-service:5003
+      COMPLAINT_SERVICE_URL: http://complaint-service:5004
+      FOOD_SERVICE_URL: http://food-service:5005
+      GALLERY_SERVICE_URL: http://gallery-service:5006
+      FEEDBACK_SERVICE_URL: http://feedback-service:5007
+      GAMES_SERVICE_URL: http://games-service:5008
+      CLIENT_URL: http://localhost
+    ports:
+      - "5100:5100"
+
+  games-service:
+    build:
+      context: ./microservices/games-service
+    container_name: hostel-games-service
+    restart: unless-stopped
+    profiles: ["micro"]
+    depends_on:
+      - mongo
+    environment:
+      PORT: 5008
+      MONGO_URI: mongodb://mongo:27017/hostel_db
+      JWT_SECRET: ghctrxddcgf
+      CLIENT_URL: http://localhost
+
+  feedback-service:
+    build:
+      context: ./microservices/feedback-service
+    container_name: hostel-feedback-service
+    restart: unless-stopped
+    profiles: ["micro"]
+    depends_on:
+      - mongo
+    environment:
+      PORT: 5007
+      MONGO_URI: mongodb://mongo:27017/hostel_db
+      JWT_SECRET: ghctrxddcgf
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-Hostel Management <onboarding@resend.dev>}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      CLIENT_URL: http://localhost
+
+  gallery-service:
+    build:
+      context: ./microservices/gallery-service
+    container_name: hostel-gallery-service
+    restart: unless-stopped
+    profiles: ["micro"]
+    depends_on:
+      - mongo
+      - redis
+    environment:
+      PORT: 5006
+      MONGO_URI: mongodb://mongo:27017/hostel_db
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ghctrxddcgf
+      IMAGEKIT_PUBLIC_KEY: ${IMAGEKIT_PUBLIC_KEY:-}
+      IMAGEKIT_PRIVATE_KEY: ${IMAGEKIT_PRIVATE_KEY:-}
+      IMAGEKIT_URL_ENDPOINT: ${IMAGEKIT_URL_ENDPOINT:-}
+      CLIENT_URL: http://localhost
+
+  food-service:
+    build:
+      context: ./microservices/food-service
+    container_name: hostel-food-service
+    restart: unless-stopped
+    profiles: ["micro"]
+    depends_on:
+      - mongo
+      - redis
+    environment:
+      PORT: 5005
+      MONGO_URI: mongodb://mongo:27017/hostel_db
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ghctrxddcgf
+      CLIENT_URL: http://localhost
+
+  complaint-service:
+    build:
+      context: ./microservices/complaint-service
+    container_name: hostel-complaint-service
+    restart: unless-stopped
+    profiles: ["micro"]
+    depends_on:
+      - mongo
+    environment:
+      PORT: 5004
+      MONGO_URI: mongodb://mongo:27017/hostel_db
+      JWT_SECRET: ghctrxddcgf
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      IMAGEKIT_PUBLIC_KEY: ${IMAGEKIT_PUBLIC_KEY:-}
+      IMAGEKIT_PRIVATE_KEY: ${IMAGEKIT_PRIVATE_KEY:-}
+      IMAGEKIT_URL_ENDPOINT: ${IMAGEKIT_URL_ENDPOINT:-}
+      CLIENT_URL: http://localhost
+
+  notification-service:
+    build:
+      context: ./microservices/notification-service
+    container_name: hostel-notification-service
+    restart: unless-stopped
+    profiles: ["micro"]
+    depends_on:
+      - mongo
+    environment:
+      PORT: 5003
+      MONGO_URI: mongodb://mongo:27017/hostel_db
+      JWT_SECRET: ghctrxddcgf
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      CLIENT_URL: http://localhost
+
+  room-service:
+    build:
+      context: ./microservices/room-service
+    container_name: hostel-room-service
+    restart: unless-stopped
+    profiles: ["micro"]
+    depends_on:
+      - mongo
+    environment:
+      PORT: 5002
+      MONGO_URI: mongodb://mongo:27017/hostel_db
+      JWT_SECRET: ghctrxddcgf
+      CLIENT_URL: http://localhost
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
+    container_name: hostel-client
+    restart: unless-stopped
+    profiles: ["frontend"]
+    depends_on:
+      - server
+    ports:
+      - "80:80"
+
+volumes:
+  mongo_data:
+  redis_data:

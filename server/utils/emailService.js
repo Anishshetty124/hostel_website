@@ -1,6 +1,18 @@
 const { Resend } = require('resend');
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let resendClient = null;
+
+const getResendClient = () => {
+  if (!process.env.RESEND_API_KEY) {
+    return null;
+  }
+
+  if (!resendClient) {
+    resendClient = new Resend(process.env.RESEND_API_KEY);
+  }
+
+  return resendClient;
+};
 
 /**
  * Send OTP email for password reset
@@ -11,6 +23,11 @@ const resend = new Resend(process.env.RESEND_API_KEY);
  */
 const sendPasswordResetOTP = async (toEmail, userName, otp) => {
   try {
+    const resend = getResendClient();
+    if (!resend) {
+      throw new Error('RESEND_API_KEY is not configured');
+    }
+
     const { data, error } = await resend.emails.send({
       from: process.env.EMAIL_FROM || 'Hostel Management <onboarding@resend.dev>',
       to: [toEmail],
@@ -112,6 +129,11 @@ const sendPasswordResetOTP = async (toEmail, userName, otp) => {
  */
 const sendWelcomeEmail = async (toEmail, userName) => {
   try {
+    const resend = getResendClient();
+    if (!resend) {
+      return { success: false, error: new Error('RESEND_API_KEY is not configured') };
+    }
+
     const { data, error } = await resend.emails.send({
       from: process.env.EMAIL_FROM || 'Hostel Management <onboarding@resend.dev>',
       to: [toEmail],
@@ -172,6 +194,11 @@ const sendWelcomeEmail = async (toEmail, userName) => {
 
 const sendFeedbackEmail = async (toEmails, { subject, message, userName, userEmail }) => {
   try {
+    const resend = getResendClient();
+    if (!resend) {
+      throw new Error('RESEND_API_KEY is not configured');
+    }
+
     const { data, error } = await resend.emails.send({
       from: process.env.EMAIL_FROM || 'Hostel Management <onboarding@resend.dev>',
       to: toEmails,

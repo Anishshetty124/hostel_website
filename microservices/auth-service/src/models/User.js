@@ -1,0 +1,51 @@
+const mongoose = require('mongoose');
+
+const userSchema = new mongoose.Schema({
+  firstName: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  lastName: {
+    type: String,
+    trim: true,
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
+    lowercase: true,
+  },
+  password: {
+    type: String,
+    required: true,
+  },
+  roomNumber: {
+    type: String,
+    default: 'Not Assigned',
+  },
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user',
+  },
+  resetPasswordCode: {
+    type: String,
+  },
+  resetPasswordExpiry: {
+    type: Date,
+  },
+  creativeNotifications: {
+    type: Boolean,
+    default: true,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+userSchema.index({ firstName: 1 });
+
+module.exports = mongoose.model('User', userSchema);

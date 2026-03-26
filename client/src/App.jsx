@@ -10,8 +10,7 @@ import LoadingSpinner from './components/LoadingSpinner';
 // Auth Pages - Load immediately
 import Login from './pages/Login';
 import Register from './pages/Register';
-import ForgotPassword from './pages/ForgotPassword';
-
+import ForgotPassword from './pages/ForgotPassword'
 // Layouts - Load immediately
 import UserLayout from './components/layouts/UserLayout';
 import AdminLayout from './components/layouts/AdminLayout';

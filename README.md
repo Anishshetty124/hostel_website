@@ -68,6 +68,35 @@ Total Blocking Time:    285ms → 68ms  (-76%) ✅
 
 ## 🏗️ Project Architecture
 
+## 🧩 Microservices Migration (Strangler Start)
+
+The repository now includes an incremental microservices bootstrap:
+
+- `microservices/api-gateway` - entrypoint that keeps `/api` contract stable
+- `microservices/auth-service` - first extracted service boundary (standalone `/api/auth`)
+- `microservices/room-service` - second extracted service boundary (standalone `/api/rooms`)
+- `microservices/notification-service` - third extracted service boundary (standalone `/api/notifications`, `/api/push`)
+- `microservices/complaint-service` - fourth extracted service boundary (standalone `/api/complaints`)
+- `microservices/food-service` - fifth extracted service boundary (standalone `/api/food`)
+- `microservices/gallery-service` - sixth extracted service boundary (standalone `/api/gallery`)
+- `microservices/feedback-service` - seventh extracted service boundary (standalone `/api/feedback`)
+- `microservices/games-service` - eighth extracted service boundary (standalone `/api/games`)
+- `microservices/notification-service` - third extracted service boundary (standalone `/api/notifications`, `/api/push`)
+
+### Quick Start (Migration Mode)
+
+```bash
+# Local processes (server + auth-service + api-gateway)
+npm run dev:micro
+
+# Docker profile
+docker compose --profile micro up --build
+```
+
+Gateway URL in migration mode: `http://localhost:5100`
+
+Detailed roadmap: `docs/microservices-migration-plan.md`
+
 ### Monorepo Structure with npm Workspaces
 
 ```
@@ -181,7 +210,7 @@ MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/hostel_db
 MONGODB_LOCAL=mongodb://localhost:27017/hostel
 
 # JWT Authentication
-JWT_SECRET=your_super_secret_jwt_key_min_32_chars
+JWT_SECRET=
 JWT_EXPIRE=7d
 
 # Email Configuration
@@ -236,6 +265,24 @@ npm run start:server
 # Terminal 2 - Frontend
 npm run start:client
 ```
+
+#### 5. Run with Docker (Production-like)
+
+```bash
+# Build and start frontend, backend, MongoDB, and Redis
+docker compose up --build -d
+
+# Stop the stack
+docker compose down
+```
+
+Services:
+- Frontend: `http://localhost`
+- Backend API: `http://localhost:5000/api`
+- MongoDB: `mongodb://localhost:27017`
+- Redis: `redis://localhost:6379`
+
+If your backend needs additional secrets (JWT, email, etc.), add them under the `server.environment` section in `docker-compose.yml`.
 
 ---
 

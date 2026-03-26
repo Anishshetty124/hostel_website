@@ -14,7 +14,6 @@ const Login = () => {
   const [status, setStatus] = useState({ loading: false, error: null });
   const [googleError, setGoogleError] = useState(null);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [googlePrompting, setGooglePrompting] = useState(false);
   const [showRoomLookup, setShowRoomLookup] = useState(false);
   const [roomQuery, setRoomQuery] = useState("");
   const [roomMembers, setRoomMembers] = useState([]);
@@ -85,7 +84,6 @@ const Login = () => {
   const handleGoogleLoginSuccess = async (credentialResponse) => {
     try {
       setGoogleError(null);
-      setGooglePrompting(false);
       setGoogleLoading(true);
       const t0 = performance.now();
       const { credential } = credentialResponse || {};
@@ -94,7 +92,6 @@ const Login = () => {
         setGoogleError(msg);
         toast.error(msg);
         setGoogleLoading(false);
-        setGooglePrompting(false);
         return;
       }
       const response = await api.post("/auth/google-login", { token: credential });
@@ -106,7 +103,6 @@ const Login = () => {
         setGoogleData(response.data.googleData);
         setShowGoogleVerificationModal(true);
         setGoogleLoading(false);
-        setGooglePrompting(false);
       } else if (response.data.action === "login" && response.data.token) {
         // Existing user - directly login
         setAuth({ token: response.data.token, user: response.data.user });
@@ -127,7 +123,6 @@ const Login = () => {
       setGoogleError(fullMsg);
       toast.error(fullMsg);
       setGoogleLoading(false);
-      setGooglePrompting(false);
       console.error("[Login] Google login error:", error);
     }
   };
@@ -137,7 +132,6 @@ const Login = () => {
     setGoogleError(msg);
     toast.error(msg);
     setGoogleLoading(false);
-    setGooglePrompting(false);
     console.error("[Login] Google login failed");
   };
 
@@ -215,12 +209,12 @@ const Login = () => {
             <span className="inline-block px-4 py-2 rounded-full font-semibold text-indigo-700 dark:text-indigo-200 bg-indigo-50 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-700 text-base md:text-lg">
               Don’t have an account?{' '}
               <Link to="/register" className="underline underline-offset-2 font-bold text-indigo-600 dark:text-indigo-300 hover:text-indigo-800 dark:hover:text-indigo-100 transition-colors">Register</Link>
-              <div
-                className="w-full flex justify-center"
-                onPointerDownCapture={() => setGooglePrompting(true)}
-                onTouchStart={() => setGooglePrompting(true)}
-                onMouseDown={() => setGooglePrompting(true)}
-              >
+            </span>
+          </div>
+
+          <button 
+            onClick={() => navigate('/user/dashboard')}
+            className="inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 text-xs sm:text-sm font-medium transition-colors w-fit"
           >
             <svg className="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -228,7 +222,7 @@ const Login = () => {
             Back
           </button>
 
-              {googlePrompting && !googleLoading && (
+          <div className="mt-4 sm:mt-6 mb-5">
             <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent tracking-tight">Sign in to your account</h1>
             <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">Use your email and password</p>
           </div>
@@ -239,12 +233,7 @@ const Login = () => {
               <p className="text-xs font-semibold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">
                 Continue with Google
               </p>
-              <div
-                className="w-full flex justify-center"
-                onPointerDownCapture={() => setGoogleLoading(true)}
-                onTouchStart={() => setGoogleLoading(true)}
-                onMouseDown={() => setGoogleLoading(true)}
-              >
+              <div className="w-full flex justify-center">
                 <GoogleLogin
                   onSuccess={handleGoogleLoginSuccess}
                   onError={handleGoogleLoginError}
@@ -252,12 +241,6 @@ const Login = () => {
                   text="signin_with"
                 />
               </div>
-              {googleLoading && (
-                <div className="text-xs text-indigo-600 dark:text-indigo-300 flex items-center gap-2">
-                  <span className="inline-block h-3 w-3 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                  <span>Waiting for Google...</span>
-                </div>
-              )}
             </div>
           </div>
 
@@ -282,13 +265,6 @@ const Login = () => {
             </div>
           )}
 
-          {googleLoading ? (
-            <div className="py-10 flex flex-col items-center justify-center text-center gap-3">
-              <div className="h-10 w-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-              <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">Logging you in…</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Please wait</p>
-            </div>
-          ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="group">
               <label htmlFor="identifier" className="block text-gray-700 dark:text-gray-300 text-xs font-bold uppercase tracking-wider mb-2 ml-1">
@@ -384,7 +360,6 @@ const Login = () => {
             </button>
 
           </form>
-          )}
 
           {showRoomLookup && (
             <div className="mt-6 border border-indigo-200 dark:border-indigo-800/50 rounded-xl p-4 bg-indigo-50/30 dark:bg-indigo-950/20">
